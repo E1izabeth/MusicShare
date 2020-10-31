@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30225.117
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicShare.UI", "MusicShare.UI.csproj", "{43B570D6-B7E8-4D35-9066-F53B9D4D3F73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicShare.Service", "..\MusicShare.Intraction\MusicShare.Service.csproj", "{72D643F9-99ED-49CE-95D7-5391E53C0DC7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{43B570D6-B7E8-4D35-9066-F53B9D4D3F73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43B570D6-B7E8-4D35-9066-F53B9D4D3F73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43B570D6-B7E8-4D35-9066-F53B9D4D3F73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43B570D6-B7E8-4D35-9066-F53B9D4D3F73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72D643F9-99ED-49CE-95D7-5391E53C0DC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72D643F9-99ED-49CE-95D7-5391E53C0DC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72D643F9-99ED-49CE-95D7-5391E53C0DC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72D643F9-99ED-49CE-95D7-5391E53C0DC7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FB76EB0F-A628-4467-A034-86B9FE783C4E}
+	EndGlobalSection
+EndGlobal
