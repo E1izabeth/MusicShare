@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MusicShare.Intraction.Db
+namespace MusicShare.Service.Db
 {
     class MusicShareDbContext : RepositoryImpl, IMusicShareDbContext
     {
