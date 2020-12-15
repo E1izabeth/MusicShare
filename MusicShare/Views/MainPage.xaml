@@ -1,0 +1,168 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<MasterDetailPage xmlns="http://xamarin.com/schemas/2014/forms"
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+            xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="d"
+            xmlns:views="clr-namespace:MusicShare.Views"
+            xmlns:vhome="clr-namespace:MusicShare.Views.Home"
+            xmlns:vo="clr-namespace:MusicShare.Views.Orders"
+            xmlns:vm="clr-namespace:MusicShare.ViewModels"
+            xmlns:vmo="clr-namespace:MusicShare.ViewModels.Orders"
+            xmlns:vmh="clr-namespace:MusicShare.ViewModels.Home"
+            x:Class="MusicShare.Views.MainPage"
+            MasterBehavior="Popover" 
+            Title="MusicShare" x:Name="root"
+            Visual="Material" >
+    <MasterDetailPage.Master>
+        <ContentPage Title="Menu">
+            <ScrollView>
+                <Grid VerticalOptions="FillAndExpand" BackgroundColor="#668161">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Padding="10">
+                        <views:ContentPresenter DataItem="{Binding CurrentStateModel}" UseDataItem="True">
+                            <views:ContentPresenter.ItemTemplate>
+                                <views:TemplateSelector>
+                                    <views:TemplateCase DataType="{x:Type vm:HomeAppViewModel}">
+                                        <DataTemplate>
+                                            <Label Text="MusicShare" FontSize="20" TextColor="#fff48f"/>
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                    <views:TemplateCase DataType="{x:Type vm:RootAppViewModel}">
+                                        <DataTemplate>
+                                            <StackLayout Orientation="Horizontal">
+                                                <Label Text="MusicShare [" FontSize="20" TextColor="#fff48f"/>
+                                                <Label Text="{Binding BindingContext.ProfileInfo.Login,Source={d:Reference root}}" FontSize="20" TextColor="#fff48f"/>
+                                                <Label Text="]" FontSize="20" TextColor="#fff48f"/>
+                                            </StackLayout>
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                </views:TemplateSelector>
+                            </views:ContentPresenter.ItemTemplate>
+                        </views:ContentPresenter>
+                    </Grid>
+                    <ListView x:Name="ListViewMenu" Grid.Row="1" HasUnevenRows="True" 
+                              ItemsSource="{Binding CurrentStateModel.MenuPages}" 
+                              SelectedItem="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <ViewCell>
+                                    <Grid Padding="10">
+                                        <Label AutomationId="menuListItem" Text="{Binding Title}" d:Text="{Binding .}" FontSize="20" TextColor="#fff48f"/>
+                                    </Grid>
+                                </ViewCell>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                        <ListView.Triggers>
+                            <EventTrigger Event="ItemSelected" >
+                                <views:PropertyTriggerAction>
+                                    <Setter Property="MasterDetailPage.IsPresented" Value="False" TargetName="root" />
+                                </views:PropertyTriggerAction>
+                            </EventTrigger>
+                        </ListView.Triggers>
+                    </ListView>
+                </Grid>
+            </ScrollView>
+        </ContentPage>
+    </MasterDetailPage.Master>
+    <MasterDetailPage.Detail>
+        <NavigationPage>
+            <x:Arguments>
+                <ContentPage Title="{Binding CurrentStateModel.CurrentPage.Title}" >
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <views:ContentPresenter DataItem="{Binding CurrentStateModel.CurrentPage}" UseDataItem="True">
+                            <views:ContentPresenter.ItemTemplate>
+                                <views:TemplateSelector>
+                                    <views:TemplateCase DataType="{x:Type vmh:LoginViewModel}">
+                                        <DataTemplate>
+                                            <vhome:LoginPage />
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                    <views:TemplateCase DataType="{x:Type vmh:RegisterViewModel}">
+                                        <DataTemplate>
+                                            <vhome:RegisterPage />
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                    <views:TemplateCase DataType="{x:Type vmh:RestoreViewModel}">
+                                        <DataTemplate>
+                                            <vhome:RestorePage />
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                    <views:TemplateCase DataType="{x:Type vm:AboutViewModel}">
+                                        <DataTemplate>
+                                            <views:AboutPage />
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                    <views:TemplateCase DataType="{x:Type vmh:LogoutViewModel}">
+                                        <DataTemplate>
+                                            <vhome:LogoutPage />
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                    <views:TemplateCase DataType="{x:Type vmh:ProfileViewModel}">
+                                        <DataTemplate>
+                                            <views:ProfilePage />
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                </views:TemplateSelector>
+                            </views:ContentPresenter.ItemTemplate>
+                        </views:ContentPresenter>
+                        <Frame Grid.Row="0" IsVisible="{Binding OperationInProgress}" BackgroundColor="LightGray" Opacity="0.25">
+                            <ActivityIndicator IsRunning="{Binding OperationInProgress}" Opacity="1" />
+                        </Frame>
+                        <Frame Grid.Row="1" IsVisible="{Binding HasError}" BackgroundColor="LightSalmon" Padding="0">
+                            <Grid Padding="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Button Grid.Row="0" Margin="0,5,6,0" Padding="0" HorizontalOptions="End" VerticalOptions="Center" Text="x" Command="{Binding ClearErrorsCommand}" />
+
+                                <StackLayout Grid.Row="1" BindableLayout.ItemsSource="{Binding Popups}">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate>
+                                            <Frame BackgroundColor="DarkRed" Padding="1">
+                                                <Grid Padding="5">
+                                                    <Grid.Triggers>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Error" TargetType="VisualElement">
+                                                            <Setter Property="VisualElement.BackgroundColor" Value="LightSalmon" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Warning" TargetType="VisualElement">
+                                                            <Setter Property="VisualElement.BackgroundColor" Value="LemonChiffon" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Info" TargetType="VisualElement">
+                                                            <Setter Property="VisualElement.BackgroundColor" Value="LightGray" />
+                                                        </DataTrigger>
+                                                    </Grid.Triggers>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Label Grid.Column="0" Text="{Binding Stamp}" TextColor="DarkRed" VerticalOptions="Center" />
+                                                    <Label Grid.Column="1" Text="{Binding Text}" TextColor="DarkRed" VerticalOptions="Center" HorizontalOptions="Start" 
+                                                           AutomationId="lblPopupText"/>
+                                                    <Button Grid.Column="2" Text="x" Padding="0" Command="{Binding CloseCommand}"
+                                                            AutomationId="btnPopupClose"/>
+                                                </Grid>
+                                            </Frame>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </StackLayout>
+                            </Grid>
+                        </Frame>
+                    </Grid>
+                </ContentPage>
+            </x:Arguments>
+        </NavigationPage>
+    </MasterDetailPage.Detail>
+
+</MasterDetailPage>

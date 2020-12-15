@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Grid xmlns="http://xamarin.com/schemas/2014/forms"
+      xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+      xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d"
+      x:Class="MusicShare.Views.ProfilePage"
+      xmlns:vm="clr-namespace:MusicShare.ViewModels"
+      Visual="Material">
+
+    <ScrollView>
+        <StackLayout>
+            <Expander x:Name="emailArea" IsExpanded="{Binding IsEmailAreaExpanded,Mode=TwoWay}">
+                <Expander.Header>
+                    <Grid Padding="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Column="0" Text="Email options" AutomationId="lblMailOptions"/>
+
+                        <Label Grid.Column="1" FontAttributes="Bold">
+                            <Label.Triggers>
+                                <DataTrigger Binding="{Binding IsExpanded,Source={x:Reference emailArea}}" Value="True" TargetType="Label">
+                                    <Setter Property="Label.Text" Value="^" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsExpanded,Source={x:Reference emailArea}}" Value="False" TargetType="Label">
+                                    <Setter Property="Label.Text" Value="v" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Grid>
+                </Expander.Header>
+                <Expander.Content>
+                    <Grid Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+
+                        <!--<Label Grid.Row="0" Grid.Column="1" Text="Login:" />
+                        <Entry Grid.Row="0" Grid.Column="2" Text="{Binding App.ProfileInfo.Login}" IsEnabled="False"/>-->
+
+                        <Label Grid.Row="0" Grid.Column="0" Text="Old email:" />
+                        <Entry Grid.Row="0" Grid.Column="1" Text="{Binding OldEmail}" 
+                               Placeholder="{Binding App.ProfileInfo.EmailFootprint}" AutomationId="txtMailOld"/>
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="New email:" />
+                        <Entry Grid.Row="2" Grid.Column="1" Text="{Binding NewEmail}" AutomationId="txtMailNew1" />
+
+                        <Label Grid.Row="4" Grid.Column="0" Text="Repeat new email:" />
+                        <Entry Grid.Row="4" Grid.Column="1" Text="{Binding NewEmail2}"  AutomationId="txtMailNew2" />
+                        
+                        <Label Grid.Row="6" Grid.Column="0" Text="Current password:" />
+                        <Entry Grid.Row="6" Grid.Column="1" IsPassword="True" Text="{Binding CurrentPassword}" AutomationId="txtMailPwd" />
+
+                        <Button Grid.Row="8" Grid.Column="1" Text="Change email" 
+                                Command="{Binding ChangeEmailCommand}" AutomationId="btnMailChangeMail"/>
+
+                    </Grid>
+                </Expander.Content>
+            </Expander>
+
+            <Expander x:Name="passwordArea" IsExpanded="{Binding IsPasswordAreaExpanded,Mode=TwoWay}">
+                <Expander.Header>
+                    <Grid Padding="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Column="0" Text="Password options" AutomationId="lblPwdOptions" />
+
+                        <Label Grid.Column="1" FontAttributes="Bold">
+                            <Label.Triggers>
+                                <DataTrigger Binding="{Binding IsExpanded,Source={x:Reference passwordArea}}" Value="True" TargetType="Label">
+                                    <Setter Property="Label.Text" Value="^" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsExpanded,Source={x:Reference passwordArea}}" Value="False" TargetType="Label">
+                                    <Setter Property="Label.Text" Value="v" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Grid>
+                </Expander.Header>
+                <Expander.Content>
+                    <Grid Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="5" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+
+                        <Label Grid.Row="0" Grid.Column="0" Text="Old password:" />
+                        <Entry Grid.Row="0" Grid.Column="1" Text="********" IsEnabled="False" AutomationId="txtPwdOldPass"/>
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="NewPassword:" />
+                        <Entry Grid.Row="2" Grid.Column="1" IsPassword="True" Text="{Binding NewPassword}" AutomationId="txtPwdNewPass1" />
+
+                        <Label Grid.Row="4" Grid.Column="0" Text="RepeatNewPassword:" />
+                        <Entry Grid.Row="4" Grid.Column="1" IsPassword="True" Text="{Binding NewPassword2}" AutomationId="txtPwdNewPass2" />
+
+                        <Label Grid.Row="6" Grid.Column="0" Text="Current email:" />
+                        <Entry Grid.Row="6" Grid.Column="1" Text="{Binding  CurrentEmail}" AutomationId="txtPwdEmail" />
+
+                        <Button Grid.Row="8" Grid.Column="1" Text="Change password" 
+                                Command="{Binding ChangePasswordCommand}" AutomationId="btnPwdChangePass"/>
+                    </Grid>
+                </Expander.Content>
+            </Expander>
+
+            <StackLayout Orientation="Vertical">
+                <StackLayout.Triggers>
+                    <DataTrigger Binding="{Binding App.ProfileInfo.IsActivated}" Value="True" TargetType="StackLayout">
+                        <Setter Property="VisualElement.IsVisible" Value="False" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding App.ProfileInfo.IsActivated}" Value="False" TargetType="StackLayout">
+                        <Setter Property="VisualElement.IsVisible" Value="True" />
+                    </DataTrigger>
+                </StackLayout.Triggers>
+                <Label Text="Current email:" />
+                <Entry Text="{Binding  ActivationEmail}" AutomationId="txtActivationEmail" />
+                <Button Text="Activate profile" Command="{Binding ActivateProfileCommand}" AutomationId="btnActivateProfile"/>
+            </StackLayout>
+        </StackLayout>
+    </ScrollView>
+</Grid>

@@ -10,11 +10,9 @@ using System.Threading.Tasks;
 
 namespace MusicShare.Intraction.Db
 {
-    interface IDbContext : IDisposable
+    public interface IDbContext : IDisposable
     {
         Table<DbUserInfo> Users { get; }
-        Table<DbCarInfo> Cars { get; }
-        Table<DbOrderInfo> Orders { get; }
 
         IDbConnection Connection { get; }
 
@@ -23,7 +21,7 @@ namespace MusicShare.Intraction.Db
         void CreateTables();
     }
 
-    class DbContext : DataContext, IDbContext
+    public class DbContext : DataContext, IDbContext
     {
         public Table<DbUserInfo> Users { get; }
 
@@ -62,7 +60,7 @@ namespace MusicShare.Intraction.Db
     }
 
     [Table]
-    class DbUserInfo
+    public class DbUserInfo
     {
         [Column(IsPrimaryKey = true, AutoSync = AutoSync.OnInsert, DbType = "BIGINT NOT NULL IDENTITY", IsDbGenerated = true)]
         public long Id { get; set; }

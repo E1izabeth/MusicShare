@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Grid xmlns="http://xamarin.com/schemas/2014/forms"
+      xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+      xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d"
+      x:Class="MusicShare.Views.Home.RegisterPage "
+      xmlns:vm="clr-namespace:MusicShare.ViewModels"
+      Visual="Material">
+
+    <ScrollView>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            
+            <Image Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Source="logo.png" Aspect="AspectFill" />
+
+            <Label Grid.Row="2" Grid.Column="1" Text="Login:" />
+            <Entry Grid.Row="2" Grid.Column="2" Text="{Binding Login}" AutomationId="txtRegLogin" />
+
+            <Label Grid.Row="4" Grid.Column="1" Text="Email:" />
+            <Entry Grid.Row="4" Grid.Column="2" Text="{Binding Email}" AutomationId="txtRegEmail" />
+
+            <Label Grid.Row="6" Grid.Column="1" Text="Password:" />
+            <Entry Grid.Row="6" Grid.Column="2" IsPassword="True" Text="{Binding Password}" AutomationId="txtRegPwd1" />
+
+            <Label Grid.Row="8" Grid.Column="1" Text="Repeat it:" />
+            <Entry Grid.Row="8" Grid.Column="2" IsPassword="True" Text="{Binding Password2}" AutomationId="txtRegPwd2"/>
+
+            <Button Grid.Row="10" Grid.Column="2" Text="Register!" Command="{Binding RegisterCommand}" AutomationId="btnRegister" />
+
+        </Grid>
+    </ScrollView>
+</Grid>

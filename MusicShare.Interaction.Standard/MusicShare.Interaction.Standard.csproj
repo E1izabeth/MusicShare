@@ -43,13 +43,27 @@
   <ItemGroup>
     <Compile Include="DisposableList.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="IndentedWriter.cs" />
+    <Compile Include="MusicShareSvc_expanded.cs" />
+    <Compile Include="MusicShareSvc_visitors.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="XmlVsJsonObjectConverter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MusicShareSvc.xsd">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="expandGroups.xslt" />
+    <Content Include="expandVisitors.xslt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>call "$(DevEnvDir)..\Tools\VsDevCmd.bat"
-msxsl.exe $(ProjectDir)MusicShareSvc.xsd $(ProjectDir)expandGroups.xslt -o $(ProjectDir)MusicShareSvc.expanded.xsd
-xsd /c $(ProjectDir)MusicShareSvc.expanded.xsd /o:$(ProjectDir)\
-msxsl.exe $(ProjectDir)MusicShareSvc.xsd $(ProjectDir)expandVisitors.xslt -o $(ProjectDir)CarblamSvc_visitors.cs</PreBuildEvent>
+    <PreBuildEvent>
+      call "$(DevEnvDir)..\Tools\VsDevCmd.bat"
+      msxsl.exe $(ProjectDir)MusicShareSvc.xsd $(ProjectDir)expandGroups.xslt -o $(ProjectDir)MusicShareSvc.expanded.xsd
+      xsd /c $(ProjectDir)MusicShareSvc.expanded.xsd /o:$(ProjectDir)\
+      msxsl.exe $(ProjectDir)MusicShareSvc.xsd $(ProjectDir)expandVisitors.xslt -o $(ProjectDir)MusicShareSvc_visitors.cs</PreBuildEvent>
   </PropertyGroup>
 </Project>

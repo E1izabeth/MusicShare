@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Grid xmlns="http://xamarin.com/schemas/2014/forms"
+      xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+      xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d"
+      x:Class="MusicShare.Views.Home.LogoutPage"
+      xmlns:vm="clr-namespace:MusicShare.ViewModels"
+      Visual="Material">
+
+    <ScrollView>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            
+            <Image Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Source="logo.png" Aspect="AspectFill" />
+
+            <Label Grid.Row="2" Grid.Column="1" Text="Are you sure, you want to log out?" />
+            <Button Grid.Row="4" Grid.Column="1" Text="Log-out!" Command="{Binding LogoutCommand}" AutomationId="btnLogout" />
+
+        </Grid>
+    </ScrollView>
+</Grid>

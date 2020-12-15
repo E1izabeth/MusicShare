@@ -2,16 +2,17 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MusicShare.Interaction.Standard
+namespace MusicShare
 {
     internal class GenericComparer<T, P> : IEqualityComparer<T>
-                   where P : IEquatable<P>
+               where P : IEquatable<P>
     {
         public readonly Func<T, P> _accessor;
 
@@ -73,6 +74,39 @@ namespace MusicShare.Interaction.Standard
             }
         }
 
+        //private static readonly object _cryptoServiceLock = new object();
+        //private static readonly SymmetricAlgorithm _cryptoService = new AesCryptoServiceProvider();
+
+        //public static int EncryptionKeySize { get { return _cryptoService.KeySize; } }
+
+        //public static string Encrypt(this string text, string key)
+        //{
+
+        //}
+
+        //public static string Encrypt(this string text, byte[] key, byte[] vector)
+        //{
+        //    return Transform(text, _cryptoServiceLock.Lock(() => _cryptoService.CreateEncryptor(key, vector)));
+        //}
+
+        //public static string Decrypt(this string text, byte[] key, byte[] vector)
+        //{
+        //    return Transform(text, _cryptoServiceLock.Lock(() => _cryptoService.CreateDecryptor(key, vector)));
+        //}
+
+        //private static string Transform(string text, ICryptoTransform cryptoTransform)
+        //{
+        //    MemoryStream stream = new MemoryStream();
+        //    CryptoStream cryptoStream = new CryptoStream(stream, cryptoTransform, CryptoStreamMode.Write);
+
+        //    byte[] input = Encoding.Default.GetBytes(text);
+
+        //    cryptoStream.Write(input, 0, input.Length);
+        //    cryptoStream.FlushFinalBlock();
+
+        //    return Encoding.Default.GetString(stream.ToArray());
+        //}
+
         public static string NormalizeUrl(this string url)
         {
             var uri = new UriBuilder(url);
@@ -127,16 +161,20 @@ namespace MusicShare.Interaction.Standard
                 sb.AppendLine($"--- wrapped with {e.GetType().FullName} ({(string.IsNullOrWhiteSpace(e.Message) ? string.Empty : (": " + e.Message))}) at ");
             }
 
+            // D:\Home\Ged\portable-project.ru\runtime\src\Portable.Common\Net\Discovery\DiscoverClient.cs(81,36,81,38): warning CS0168: The variable 'ex' is declared but never used
+
             var frames = new StackTrace(ex, true).GetFrames();
             var fnameLength = frames.Max(f => f.GetFileName()?.Length ?? 0);
 
-            var lines = frames.Select(f => new {
+            var lines = frames.Select(f => new
+            {
                 fileName = f.GetFileName(),
                 lineNum = f.GetFileLineNumber(),
                 columnNum = f.GetFileColumnNumber(),
 
                 method = f.GetMethod(),
-            }).Select(f => new {
+            }).Select(f => new
+            {
                 f.method,
                 methodArgs = f.method.GetParameters().Length > 0 ? "..." : string.Empty,
                 prefixString = $"{f.fileName}({f.lineNum},{f.columnNum}): "
@@ -173,6 +211,7 @@ namespace MusicShare.Interaction.Standard
         public static bool HasCustomAttribute<T>(this MemberInfo prop)
             where T : Attribute
         {
+            //return prop.GetCustomAttribute<T>() != null;
             return prop.GetCustomAttributes(true).OfType<T>().Any();
         }
 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MusicShare.Intraction.Db
 {
-    interface IMusicShareDbContext
+    public interface IMusicShareDbContext
     {
         IUsersRepository Users { get; }
 
@@ -15,7 +15,7 @@ namespace MusicShare.Intraction.Db
         void SubmitChanges();
     }
 
-    interface IUsersRepository
+    public interface IUsersRepository
     {
         void AddUser(DbUserInfo user);
         DbUserInfo GetUserById(long userId);
