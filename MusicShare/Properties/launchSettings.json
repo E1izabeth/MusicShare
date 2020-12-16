@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MusicShare": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

@@ -6,9 +6,7 @@
             mc:Ignorable="d"
             xmlns:views="clr-namespace:MusicShare.Views"
             xmlns:vhome="clr-namespace:MusicShare.Views.Home"
-            xmlns:vo="clr-namespace:MusicShare.Views.Orders"
             xmlns:vm="clr-namespace:MusicShare.ViewModels"
-            xmlns:vmo="clr-namespace:MusicShare.ViewModels.Orders"
             xmlns:vmh="clr-namespace:MusicShare.ViewModels.Home"
             x:Class="MusicShare.Views.MainPage"
             MasterBehavior="Popover" 
@@ -17,7 +15,7 @@
     <MasterDetailPage.Master>
         <ContentPage Title="Menu">
             <ScrollView>
-                <Grid VerticalOptions="FillAndExpand" BackgroundColor="#668161">
+                <Grid VerticalOptions="FillAndExpand" BackgroundColor="#0600a4">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />

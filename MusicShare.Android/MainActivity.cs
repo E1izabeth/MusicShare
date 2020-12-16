@@ -14,6 +14,8 @@ using Org.Apache.Http.Impl.Conn;
 using Org.Apache.Http.Conn.Ssl;
 using Android.Content;
 using MusicShare.ViewModels;
+using MusicShare.Views;
+using MusicShare.Droid.Util;
 
 namespace MusicShare.Droid
 {
@@ -29,7 +31,7 @@ namespace MusicShare.Droid
         {
             TabLayoutResource = Resource.Layout.Tabbar;
             ToolbarResource = Resource.Layout.Toolbar;
-
+            
             base.OnCreate(savedInstanceState);
             
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
@@ -49,12 +51,19 @@ namespace MusicShare.Droid
                 var keyStr = data.GetQueryParameter("key");
                 this.AppModel.ApplyAction(actionName, keyStr);
             }
+
+            //Xamarin.Essentials.Platform.Init(this.Application);
+            ZXing.Net.Mobile.Forms.Android.Platform.Init();
+            ZXing.Mobile.MobileBarcodeScanner.Initialize(this.Application);
+
+            LocalUtilityContext.Set(new LocalUtility(this));
         }
 
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
         {
             Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
-
+            ZXing.Net.Mobile.Forms.Android.PermissionsHandler.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+            
             base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
 

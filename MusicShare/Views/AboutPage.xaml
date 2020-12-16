@@ -23,7 +23,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <StackLayout Grid.Row="0" BackgroundColor="{StaticResource Accent}" VerticalOptions="FillAndExpand" HorizontalOptions="Fill">
-                <Image Source="logo.png" Aspect="AspectFill" />
+                <Image Source="logo.jpg" Aspect="AspectFill" />
             </StackLayout>
             <StackLayout Grid.Row="1" Orientation="Vertical" Padding="16,40,16,40" Spacing="10">
                 <Label FontSize="22">
@@ -41,7 +41,7 @@
                     <Label.FormattedText>
                         <FormattedString>
                             <FormattedString.Spans>
-                                <Span Text="An app that will search for trucks that are ready to help you transport things. It's more like a taxi service, but with trucks." />
+                                <Span Text="An app that allows you tho share music and listen synchroniously." />
                             </FormattedString.Spans>
                         </FormattedString>
                     </Label.FormattedText>
@@ -50,11 +50,58 @@
                     <Label.FormattedText>
                         <FormattedString>
                             <FormattedString.Spans>
-                                <Span Text="You can be a driver or a customer. Just choose the correct mode in menu and enjoy!" />
+                                <Span Text="Enjoy the music together!" />
                             </FormattedString.Spans>
                         </FormattedString>
                     </Label.FormattedText>
                 </Label>
+                <Button Clicked="Button_Clicked" Text="soundcheck" />
+
+                <Grid x:Name="qrView"
+                      xmlns:bc="clr-namespace:ZXing.Net.Mobile.Forms;assembly=ZXing.Net.Mobile.Forms"
+                      xmlns:zc="clr-namespace:ZXing.Common;assembly=zxing.portable">
+                </Grid>
+                
+                <Button Clicked="btnScanQr_Clicked" Text="Scan QR" />
+
+                <Button Command="{Binding BtListenCmd}" Text="Listen BT" />
+                <ListView ItemsSource="{Binding BtDevices}" SelectedItem="{Binding Path=SelectedDevc, Mode=OneWayToSource}" HeightRequest="300">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <ViewCell>
+                                <Grid Padding="10">
+                                    <StackLayout Orientation="Horizontal">
+                                        <Label Text="{Binding Address}" />
+                                        <Label Text=" - " />
+                                        <Label Text="{Binding Name}" />
+                                    </StackLayout>
+                                </Grid>
+                            </ViewCell>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <Button Command="{Binding BtDiscoverCmd}" Text="Discover BT" />
+                <Button Command="{Binding BtConnectCmd}" Text="Connect BT" />
+
+                <ListView ItemsSource="{Binding NetSvcs}" HeightRequest="300">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <ViewCell>
+                                <Grid Padding="10">
+                                    <StackLayout Orientation="Horizontal">
+                                        <Label Text="{Binding Address}" />
+                                        <Label Text=" - " />
+                                        <Label Text="{Binding Name}" />
+                                        <Label Text=" - " />
+                                        <Label Text="{Binding Ping}" />
+                                    </StackLayout>
+                                </Grid>
+                            </ViewCell>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <Button Command="{Binding NetDiscoverRefresh}" Text="Discover Net" />
+
             </StackLayout>
         
         </Grid>

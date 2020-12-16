@@ -27,7 +27,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             
-            <Image Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Source="logo.png" Aspect="AspectFill" />
+            <Image Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Source="logo.jpg" Aspect="AspectFill" />
 
             <Label Grid.Row="2" Grid.Column="1" Text="Login:" />
             <Entry Grid.Row="2" Grid.Column="2" Text="{Binding Login}" AutomationId="txtLogin" />
