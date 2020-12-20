@@ -108,6 +108,16 @@
                                             <views:ProfilePage />
                                         </DataTemplate>
                                     </views:TemplateCase>
+                                    <views:TemplateCase DataType="{x:Type vmh:ConnectivityViewModel}">
+                                        <DataTemplate>
+                                            <views:ConnectivityPage />
+                                        </DataTemplate>
+                                    </views:TemplateCase>
+                                    <views:TemplateCase DataType="{x:Type vmh:PlaybackViewModel}">
+                                        <DataTemplate>
+                                            <views:PlaybackPage />
+                                        </DataTemplate>
+                                    </views:TemplateCase>
                                 </views:TemplateSelector>
                             </views:ContentPresenter.ItemTemplate>
                         </views:ContentPresenter>

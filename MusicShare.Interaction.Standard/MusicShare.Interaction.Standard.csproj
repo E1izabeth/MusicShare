@@ -41,12 +41,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\BidirectionalStream.cs" />
+    <Compile Include="Common\ByteQueue.cs" />
+    <Compile Include="Common\DisposableObject.cs" />
+    <Compile Include="Common\Log.cs" />
+    <Compile Include="Common\WorkerThreadPool.cs" />
     <Compile Include="DisposableList.cs" />
-    <Compile Include="Extensions.cs" />
+    <Compile Include="Common\Extensions.cs" />
     <Compile Include="IndentedWriter.cs" />
     <Compile Include="MusicShareSvc_expanded.cs" />
     <Compile Include="MusicShareSvc_visitors.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Stream\Packet.cs" />
     <Compile Include="XmlVsJsonObjectConverter.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -78,7 +78,9 @@ namespace MusicShare.ViewModels
                 this.DefaultPage = this.LoginPage = new LoginViewModel(app),
                 this.RegisterPage = new RegisterViewModel(app),
                 this.RestorePage = new RestoreViewModel(app),
-                new AboutViewModel()
+                new ConnectivityViewModel(app),
+                new PlaybackViewModel(app),
+                new AboutViewModel(app),
             });
 
             this.CurrentPage = _menuPages[0];
@@ -97,7 +99,7 @@ namespace MusicShare.ViewModels
             _menuPages.AddRange(new MenuPageViewModel[] {
                 this.DefaultPage = this.AboutPage,
                 new ProfileViewModel(app),
-                this.AboutPage = new AboutViewModel(),
+                this.AboutPage = new AboutViewModel(app),
                 new LogoutViewModel(app)
             });
 

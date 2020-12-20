@@ -20,7 +20,7 @@ using Xamarin.Forms;
 
 namespace MusicShare.Droid.Util
 {
-    class LocalUtility : ILocalUtility
+    class LocalUtility 
     {
         readonly MainActivity _mainActivity;
 
@@ -49,8 +49,16 @@ namespace MusicShare.Droid.Util
 
             extractor.SelectTrack(0);
 
-            var trackFormat = extractor.GetTrackFormat(0);
+            ////AudioManager
+            //var formatToEncode = MediaFormat.CreateAudioFormat(MediaFormat.MimetypeAudioAac, 44100, 2);
+            //var encoder = MediaCodec.CreateEncoderByType(MediaFormat.MimetypeAudioAac);
+            //encoder.SetCallback(createCallbackEncoder());
+            //encoder.Configure(formatToEncode, null, null, MediaCodecConfigFlags.Encode);
+            
+            // codecList.FindEncoderForFormat(
 
+
+            var trackFormat = extractor.GetTrackFormat(0);
             var decoder = MediaCodec.CreateDecoderByType(trackFormat.GetString(MediaFormat.KeyMime));
             decoder.Configure(trackFormat, null, null, MediaCodecConfigFlags.None);
 
@@ -98,14 +106,26 @@ namespace MusicShare.Droid.Util
                                 var sampleRateInHz = trackFormat.GetInteger(MediaFormat.KeySampleRate);
                                 var channelCount = trackFormat.GetInteger(MediaFormat.KeyChannelCount);
                                 var channelConfig = channelCount == 1 ? ChannelOut.Mono : ChannelOut.Stereo;
-                                audioTrack = new AudioTrack(
-                                    Android.Media.Stream.Music,
-                                    sampleRateInHz,
-                                    channelConfig,
-                                    Android.Media.Encoding.Pcm16bit,
-                                    AudioTrack.GetMinBufferSize(sampleRateInHz, channelConfig, Android.Media.Encoding.Pcm16bit) * 2,
-                                    AudioTrackMode.Stream);
+                                var bufferSizeInBytes = AudioTrack.GetMinBufferSize(sampleRateInHz, channelConfig, Android.Media.Encoding.Pcm16bit) * 2;
 
+                                var audioFormat = new AudioFormat.Builder()
+                                                                 .SetEncoding(Android.Media.Encoding.Pcm16bit)
+                                                                 .SetSampleRate(sampleRateInHz)
+                                                                 .SetChannelMask(channelConfig)
+                                                                 .Build();
+
+                                var audioAttributes = new AudioAttributes.Builder()
+                                                                         .SetContentType(AudioContentType.Music)
+                                                                         .SetLegacyStreamType(Android.Media.Stream.Music)
+                                                                         .Build();
+
+                                audioTrack = new AudioTrack.Builder()
+                                                           .SetTransferMode(AudioTrackMode.Stream)
+                                                           .SetPerformanceMode(AudioTrackPerformanceMode.None)
+                                                           .SetBufferSizeInBytes(bufferSizeInBytes)
+                                                           .SetAudioFormat(audioFormat)
+                                                           .SetAudioAttributes(audioAttributes)
+                                                           .Build();
                                 audioTrack.Play();
                             }
 
@@ -123,74 +143,5 @@ namespace MusicShare.Droid.Util
             _thread.Start();
         }
 
-        const string BT_NAME = "test";
-        static readonly Java.Util.UUID BT_UUID = Java.Util.UUID.FromString("46AC7CFF-6EC4-4529-8CBE-DC34673C7460");
-
-
-        public async void ListenBt()
-        {
-            var listener = BluetoothAdapter.DefaultAdapter.ListenUsingRfcommWithServiceRecord(BT_NAME, BT_UUID);
-            var sck = await listener.AcceptAsync();
-
-            this.DoDataExchange(sck);
-        }
-
-        public async Task<BtDeviceEntry[]> DiscoverBt()
-        {
-            BluetoothAdapter.DefaultAdapter.StartDiscovery();
-
-            var result = new Dictionary<string, BtDeviceEntry>();
-
-            for (int i = 0; i < 50; i++)
-            {
-                foreach (var item in BluetoothAdapter.DefaultAdapter.BondedDevices)
-                {
-                    if (item.BondState == Bond.Bonded)
-                    {
-                        result[item.Address] = new BtDeviceEntry(item.Address, item.Name);
-                    }
-                }
-
-                await Task.Delay(100);
-            }
-
-            BluetoothAdapter.DefaultAdapter.CancelDiscovery();
-
-            return result.Values.ToArray();
-        }
-
-        public void ConnectBt(string addr)
-        {
-            var remoteDevice = BluetoothAdapter.DefaultAdapter.BondedDevices.First(d => d.Address == addr);
-            var tmp = remoteDevice.CreateRfcommSocketToServiceRecord(BT_UUID);
-            tmp.Connect();
-            this.DoDataExchange(tmp);
-        }
-
-        private void DoDataExchange(BluetoothSocket sck)
-        {
-            _thread = new Thread(() => {
-                var reader = new BinaryReader(sck.InputStream);
-                while (sck.IsConnected)
-                {
-                    var len = reader.ReadInt32();
-                    var text = System.Text.Encoding.UTF8.GetString(reader.ReadBytes(len));
-                    System.Diagnostics.Debug.Print(text);
-                }
-            });
-            _thread.Start();
-
-            _thread2 = new Thread(() => {
-                var writer = new BinaryWriter(sck.OutputStream);
-                for (int i = 0; i < 100; i++)
-                {
-                    var data = System.Text.Encoding.UTF8.GetBytes("btmsg: " + i + " - " + DateTime.Now);
-                    writer.Write(data.Length);
-                    writer.Write(data);
-                    Thread.Sleep(50);
-                }
-            });
-            _thread2.Start();
-        }
     }
 }

@@ -6,12 +6,13 @@ using Xamarin.Forms;
 
 namespace MusicShare.ViewModels.Home
 {
+
     class LoginViewModel : MenuPageViewModel
     {
         public string Login { get; set; }
         public string Password { get; set; }
 
-        public ICommand LoginCommand { get;  }
+        public ICommand LoginCommand { get; }
 
         public LoginViewModel(AppViewModel app)
             : base("Login")

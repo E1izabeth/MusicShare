@@ -125,6 +125,13 @@ namespace MusicShare.ViewModels
             this.ClearErrorsCommand = new Command(this.ClearPopups);
         }
 
+        public IActivity Activity { get; private set; }
+
+        public void SetActivity(IActivity activity)
+        {
+            this.Activity = activity;
+        }
+
         private async void OnLogin()
         {
             var footprint = await _api.GetProfileFootprint();

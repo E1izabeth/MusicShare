@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Grid xmlns="http://xamarin.com/schemas/2014/forms"
+        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+        xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="MusicShare.Views.PlaybackPage"
+        xmlns:vm="clr-namespace:MusicShare.ViewModels"
+        Visual="Material">
+
+    <Grid.Resources>
+        <ResourceDictionary>
+            <Color x:Key="Primary">#2196F3</Color>
+            <Color x:Key="Accent">#96d1ff</Color>
+            <Color x:Key="LightTextColor">#999999</Color>
+        </ResourceDictionary>
+    </Grid.Resources>
+
+    <Grid Margin="10" >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="5" />
+        </Grid.RowDefinitions>
+        
+        <Grid Grid.Row="1">
+            <Grid.Resources>
+                <Style TargetType="Grid">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ShowSelectors}" Value="True" TargetType="Grid">
+                            <Setter Property="IsVisible" Value="False" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Label Grid.Column="0" Text="{Binding TracklistStatusString}" />
+            <Button Grid.Column="2" Command="{Binding AddTrackCommand}" Text="+" />
+            <Button Grid.Column="4" Command="{Binding SelectTrackCommand}" Text="..." />
+        </Grid>
+
+        <Grid Grid.Row="1" IsVisible="{Binding ShowSelectors}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Command="{Binding SelectCancelTrackCommand}" Text="Cancel" />
+            <Button Grid.Column="4"  Text="Move" IsEnabled="False" />
+            <Button Grid.Column="6" Command="{Binding SelectRemoveTrackCommand}" Text="Remove" />
+        </Grid>
+
+        <ListView Grid.Row="3" ItemsSource="{Binding Tracklist}"
+                  HasUnevenRows="True" CachingStrategy="RecycleElement" RowHeight="-1">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <Grid Grid.Row="1" Padding="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="5" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="5" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.Resources>
+                                <Style TargetType="Grid">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsActive}" Value="True" TargetType="Grid">
+                                            <Setter Property="Background" Value="LightGreen" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Resources>
+
+                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" IsVisible="{Binding Owner.ShowSelectors}" />
+                            <Label Grid.Column="2" Text="{Binding Header}" LineBreakMode="WordWrap" />
+                            <Label Grid.Column="4" Text="{Binding Duration}" LineBreakMode="NoWrap" HorizontalOptions="EndAndExpand" />
+                        </Grid>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <Grid Grid.Row="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Label Grid.Column="0" Text="{Binding ActiveTrack.Header}" LineBreakMode="WordWrap" />
+
+            <Button Grid.Column="2" Command="{Binding PlayCommand}" IsVisible="{Binding PlayCmdAvailable}" Text="Play" />
+            <Button Grid.Column="2" Command="{Binding PauseCommand}" IsVisible="{Binding PauseCmdAvailable}" Text="Pause" />
+        </Grid>
+
+        <Grid Grid.Row="7">
+            <ProgressBar Progress="70" />
+        </Grid>
+
+        <Grid Grid.Row="9">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            
+            <Label Grid.Column="0" Text="{Binding StatusString}" LineBreakMode="NoWrap" />
+
+            <Button Grid.Column="2" Command="{Binding PrevTrackCommand}" IsEnabled="True" Text="&lt;&lt;" />
+            <Button Grid.Column="4" Command="{Binding StopCommand}" IsEnabled="{Binding StopCmdAvailable}" Text="Stop" />
+            <Button Grid.Column="6" Command="{Binding NextTrackCommand}" IsEnabled="True" Text="&gt;&gt;" />
+        </Grid>
+    </Grid>
+</Grid>

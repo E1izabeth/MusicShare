@@ -79,6 +79,21 @@
     <Compile Include="MainActivity.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\Discovery\DiscoverClient.cs" />
+    <Compile Include="Services\Discovery\DiscoverService.cs" />
+    <Compile Include="Services\NetworkConnector.cs" />
+    <Compile Include="Services\BluetoothConnector.cs" />
+    <Compile Include="Services\Impl\ConnectionsHost.cs" />
+    <Compile Include="Services\Impl\PlayerException.cs" />
+    <Compile Include="Services\Impl\PlayerImpl.cs" />
+    <Compile Include="Services\Impl\PlayerPlaylist.cs" />
+    <Compile Include="Services\Impl\PlayerSource.cs" />
+    <Compile Include="Services\Impl\PlayerTarget.cs" />
+    <Compile Include="Services\PlayerIntentReceiver.cs" />
+    <Compile Include="Services\PlayerService.cs" />
+    <Compile Include="Services\PlayerServiceConnection.cs" />
+    <Compile Include="SplashActivity.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Util\LocalUtility.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -93,11 +108,12 @@
     <AndroidResource Include="Resources\values\colors.xml" />
     <AndroidResource Include="Resources\mipmap-anydpi-v26\icon.xml" />
     <AndroidResource Include="Resources\mipmap-anydpi-v26\icon_round.xml" />
-    <AndroidResource Include="Resources\drawable\xamarin_logo.png">
-      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
-    </AndroidResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\MusicShare.Interaction.Standard\MusicShare.Interaction.Standard.csproj">
+      <Project>{7e150732-feed-4435-bbdb-ce596d8f0e34}</Project>
+      <Name>MusicShare.Interaction.Standard</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MusicShare\MusicShare.csproj">
       <Project>{36e2c660-ad4b-44a2-b804-6016544e2f66}</Project>
       <Name>MusicShare</Name>
@@ -121,10 +137,16 @@
   <ItemGroup>
     <AndroidResource Include="Resources\mipmap-hdpi\ic_launcher.png" />
   </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\splash_screen.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\logo_splash.jpg" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties TriggeredFromHotReload="False" />
+      <UserProperties TriggeredFromHotReload="False" XamarinHotReloadDebuggerTimeoutExceptionMusicShareAndroidHideInfoBar="True" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

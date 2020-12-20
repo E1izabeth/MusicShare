@@ -166,15 +166,13 @@ namespace MusicShare
             var frames = new StackTrace(ex, true).GetFrames();
             var fnameLength = frames.Max(f => f.GetFileName()?.Length ?? 0);
 
-            var lines = frames.Select(f => new
-            {
+            var lines = frames.Select(f => new {
                 fileName = f.GetFileName(),
                 lineNum = f.GetFileLineNumber(),
                 columnNum = f.GetFileColumnNumber(),
 
                 method = f.GetMethod(),
-            }).Select(f => new
-            {
+            }).Select(f => new {
                 f.method,
                 methodArgs = f.method.GetParameters().Length > 0 ? "..." : string.Empty,
                 prefixString = $"{f.fileName}({f.lineNum},{f.columnNum}): "
@@ -300,6 +298,46 @@ namespace MusicShare
 
             //var prefixLength = lines.Max(l => l.prefixString.Length);
             //lines.ForEach(f => sb.AppendLine($"{f.prefixString.PadRight(prefixLength, ' ')}{f.method.DeclaringType?.FullName}::{f.method.Name}({f.methodArgs})"));
+        }
+
+        public static bool HasFlag<T>(this T value, T flag)
+            where T : Enum
+        {
+            return value.HasFlag((Enum)flag);
+        }
+
+        public static bool TryRead(this Stream stream, byte[] buff)
+        {
+            return stream.TryRead(buff, 0, buff.Length);
+        }
+
+        public static bool TryRead(this Stream stream, byte[] buff, int offset, int size)
+        {
+            var has = 0;
+            while (has < size)
+            {
+                var got = stream.Read(buff, offset + has, size - has);
+                if (got == 0)
+                    return false;
+
+                has += got;
+            }
+
+            return true;
+        }
+
+        public static DateTime Truncate(this DateTime dateTime, TimeSpan timeSpan)
+        {
+            if (timeSpan == TimeSpan.Zero) return dateTime; // Or could throw an ArgumentException
+            if (dateTime == DateTime.MinValue || dateTime == DateTime.MaxValue) return dateTime; // do not modify "guard" values
+            return dateTime.AddTicks(-(dateTime.Ticks % timeSpan.Ticks));
+        }
+
+        public static TimeSpan Truncate(this TimeSpan time, TimeSpan timeSpan)
+        {
+            if (timeSpan == TimeSpan.Zero) return time; // Or could throw an ArgumentException
+            if (time == TimeSpan.MinValue || time == TimeSpan.MaxValue) return time; // do not modify "guard" values
+            return time - new TimeSpan(time.Ticks % timeSpan.Ticks);
         }
     }
 }

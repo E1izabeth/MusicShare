@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Grid xmlns="http://xamarin.com/schemas/2014/forms"
+        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+        xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="MusicShare.Views.ConnectivityPage"
+        xmlns:vm="clr-namespace:MusicShare.ViewModels"
+        Visual="Material">
+
+    <Grid.Resources>
+        <ResourceDictionary>
+            <Color x:Key="Primary">#2196F3</Color>
+            <Color x:Key="Accent">#96d1ff</Color>
+            <Color x:Key="LightTextColor">#999999</Color>
+        </ResourceDictionary>
+        <Style TargetType="Switch">
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="HorizontalOptions" Value="StartAndExpand" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+    </Grid.Resources>
+
+    <Grid RowSpacing="5" Margin="10" >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="10" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" ColumnSpacing="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Switch Grid.Column="0" IsToggled="{Binding IsSharingActivated}" />
+            <Label Grid.Column="1" Text="Share" />
+            <Button Grid.Column="2" Text="Beacon" Command="{Binding MakeBeaconCommand}" />
+        </Grid>
+
+
+        <Grid Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsSharingActivated}" ColumnSpacing="5" RowSpacing="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Switch Grid.Row="0" Grid.Column="0" IsToggled="{Binding IsWanSharingActivated}"/>
+            <Label Grid.Row="0" Grid.Column="1" Text="Internet" />
+
+            <Switch Grid.Row="1" Grid.Column="0" IsToggled="{Binding IsLanSharingActivated}"/>
+            <Label Grid.Row="1" Grid.Column="1" Text="LAN" />
+
+            <Switch Grid.Row="2" Grid.Column="0" IsToggled="{Binding IsBtSharingActivated}"/>
+            <Label Grid.Row="2" Grid.Column="1" Text="Bluetooth" />
+        </Grid>
+
+        <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" ColumnSpacing="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Switch Grid.Column="0" IsToggled="{Binding PickUpActivated}" />
+            <Label Grid.Column="1" Text="Pick up" />
+            <Button Grid.Column="2" Text="Spot" Command="{Binding MakeSpotCommand}" />
+        </Grid>
+
+        <Grid Grid.Row="4" Grid.Column="1" RowSpacing="5">
+            <RefreshView IsRefreshing="{Binding IsRefreshingDevices, Mode=TwoWay}" Command="{Binding RefreshDevicesCommand}">
+            <ListView Grid.Row="0" ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
+                      HasUnevenRows="True" CachingStrategy="RecycleElement" RowHeight="-1">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <ViewCell>
+                            <Grid Grid.Row="1" Padding="10" ColumnSpacing="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Label Grid.Column="0" Text="{Binding Title}" LineBreakMode="WordWrap" />
+                                <Label Grid.Column="1" Text="{Binding Ping}" LineBreakMode="NoWrap" HorizontalOptions="EndAndExpand" />
+                                <Button Grid.Column="2" Text="Connect" IsVisible="{Binding IsConnectBtnVisible}" />
+                            </Grid>
+                        </ViewCell>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            </RefreshView>
+        </Grid>
+    </Grid>
+
+    <Frame IsVisible="{Binding IsQrVisible}" BackgroundColor="LightGray" Opacity="0.25">
+        <Grid Margin="20" Opacity="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <ContentPresenter Content="{Binding QrContent}" />
+            <Button Grid.Row="1" Text="Close" Command="{Binding CloseQrCommand}" />
+        </Grid>
+    </Frame>
+
+</Grid>
