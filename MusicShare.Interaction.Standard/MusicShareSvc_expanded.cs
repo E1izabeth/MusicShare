@@ -21,6 +21,115 @@ using System.Xml.Serialization;
 [System.Diagnostics.DebuggerStepThroughAttribute()]
 [System.ComponentModel.DesignerCategoryAttribute("code")]
 [System.Xml.Serialization.XmlTypeAttribute(Namespace="MusicShareSvc")]
+[System.Xml.Serialization.XmlRootAttribute("ConnectivityInfo", Namespace="MusicShareSvc", IsNullable=false)]
+public partial class ConnectivityInfoType {
+    
+    private string[] loginField;
+    
+    private IpEndPointInfo[] ipV4EndPointsField;
+    
+    private IpEndPointInfo[] ipV6EndPointsField;
+    
+    private string bluetoothAddressField;
+    
+    private string deviceNameField;
+    
+    /// <remarks/>
+    [System.Xml.Serialization.XmlElementAttribute("Login")]
+    public string[] Login {
+        get {
+            return this.loginField;
+        }
+        set {
+            this.loginField = value;
+        }
+    }
+    
+    /// <remarks/>
+    [System.Xml.Serialization.XmlElementAttribute("IpV4EndPoints")]
+    public IpEndPointInfo[] IpV4EndPoints {
+        get {
+            return this.ipV4EndPointsField;
+        }
+        set {
+            this.ipV4EndPointsField = value;
+        }
+    }
+    
+    /// <remarks/>
+    [System.Xml.Serialization.XmlElementAttribute("IpV6EndPoints")]
+    public IpEndPointInfo[] IpV6EndPoints {
+        get {
+            return this.ipV6EndPointsField;
+        }
+        set {
+            this.ipV6EndPointsField = value;
+        }
+    }
+    
+    /// <remarks/>
+    public string BluetoothAddress {
+        get {
+            return this.bluetoothAddressField;
+        }
+        set {
+            this.bluetoothAddressField = value;
+        }
+    }
+    
+    /// <remarks/>
+    [System.Xml.Serialization.XmlAttributeAttribute()]
+    public string DeviceName {
+        get {
+            return this.deviceNameField;
+        }
+        set {
+            this.deviceNameField = value;
+        }
+    }
+}
+
+/// <remarks/>
+[System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]
+[System.SerializableAttribute()]
+[System.Diagnostics.DebuggerStepThroughAttribute()]
+[System.ComponentModel.DesignerCategoryAttribute("code")]
+[System.Xml.Serialization.XmlTypeAttribute(Namespace="MusicShareSvc")]
+public partial class IpEndPointInfo {
+    
+    private string addressField;
+    
+    private int portField;
+    
+    /// <remarks/>
+    [System.Xml.Serialization.XmlAttributeAttribute()]
+    public string Address {
+        get {
+            return this.addressField;
+        }
+        set {
+            this.addressField = value;
+        }
+    }
+    
+    /// <remarks/>
+    [System.Xml.Serialization.XmlAttributeAttribute()]
+    public int Port {
+        get {
+            return this.portField;
+        }
+        set {
+            this.portField = value;
+        }
+    }
+}
+
+/// <remarks/>
+[System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]
+[System.SerializableAttribute()]
+[System.Diagnostics.DebuggerStepThroughAttribute()]
+[System.ComponentModel.DesignerCategoryAttribute("code")]
+[System.Xml.Serialization.XmlTypeAttribute(Namespace="MusicShareSvc")]
 [System.Xml.Serialization.XmlRootAttribute("Ok", Namespace="MusicShareSvc", IsNullable=false)]
 public partial class OkType {
 }

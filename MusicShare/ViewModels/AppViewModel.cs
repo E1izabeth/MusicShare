@@ -102,6 +102,9 @@ namespace MusicShare.ViewModels
 
         public ICommand ClearErrorsCommand { get; }
 
+        internal ConnectivityViewModel ConnectivityViewModel { get;private set; }
+        internal PlaybackViewModel PlaybackViewModel { get;private set; }
+
         public AppViewModel()
         {
             AppDomain.CurrentDomain.FirstChanceException += (sender, ea) =>
@@ -116,6 +119,9 @@ namespace MusicShare.ViewModels
                 System.Diagnostics.Debug.Print(ex.StackTrace);
                 try { _api.PushErrorReport(ex).Wait(); } catch { }
             };
+
+            this.ConnectivityViewModel = new ConnectivityViewModel(this);
+            this.PlaybackViewModel = new PlaybackViewModel(this);
 
             _home = new HomeAppViewModel(this);
             _root = new RootAppViewModel(this);

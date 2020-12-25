@@ -18,5 +18,17 @@ namespace MusicShare
                 act();
             }
         }
+
+        public static string FormatPlaybackTime(this TimeSpan time)
+        {
+            var result = time.Minutes.ToString().PadLeft(2, '0') + ":" + time.Seconds.ToString().PadLeft(2, '0');
+
+            if (time > TimeSpan.FromHours(1))
+            {
+                result = time.Truncate(TimeSpan.FromHours(1)).TotalHours.ToString() + ":" + result;
+            }
+
+            return result;
+        }
     }
 }

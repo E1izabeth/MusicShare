@@ -193,30 +193,46 @@ namespace MusicShare.Droid.Services
 
         private void AcceptingThreadProc()
         {
-            using (var listener = BluetoothAdapter.DefaultAdapter.ListenUsingRfcommWithServiceRecord(PlayerService.Name, _btSericeId))
+            while (WaitHandle.WaitAny(new[] { _acceptingThreadEv, _disposingEv }) == 0)
             {
-                while (WaitHandle.WaitAny(new[] { _acceptingThreadEv, _disposingEv }) == 0)
+                while (BluetoothAdapter.DefaultAdapter.IsEnabled)
                 {
-                    BluetoothSocket sck;
-                    try { sck = listener.Accept(); }
-                    catch (Exception) { sck = null; }
-
-                    if (sck != null)
+                    using (var listener = BluetoothAdapter.DefaultAdapter.ListenUsingRfcommWithServiceRecord(PlayerService.Name, _btSericeId))
                     {
-                        this.OnNewConnection?.Invoke(new BtDeviceConnection(sck));
+                        while (WaitHandle.WaitAny(new[] { _acceptingThreadEv, _disposingEv }) == 0)
+                        {
+                            BluetoothSocket sck;
+                            try { sck = listener.Accept(); }
+                            catch (Exception) { sck = null; }
+
+                            if (sck != null)
+                            {
+                                this.OnNewConnection?.Invoke(new BtDeviceConnection(sck));
+                            }
+                        }
                     }
                 }
             }
         }
 
-        public void ConnectBt(string addr)
+        public bool ConnectBt(string addr)
         {
             if (_knownDevices.TryGetValue(addr, out var deviceEntry))
             {
-                var sck = deviceEntry.Device.CreateRfcommSocketToServiceRecord(_btSericeId);
-                sck.Connect();
-                this.OnNewConnection?.Invoke(new BtDeviceConnection(sck));
+                try
+                {
+                    var sck = deviceEntry.Device.CreateRfcommSocketToServiceRecord(_btSericeId);
+                    sck.Connect();
+                    this.OnNewConnection?.Invoke(new BtDeviceConnection(sck));
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Log.TraceMethod("Unable to establish bluetooth connection: " + ex.ToString());
+                }
             }
+
+            return false;
         }
     }
 }

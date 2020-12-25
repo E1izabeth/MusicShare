@@ -32,7 +32,7 @@ namespace MusicShare
 
 
         void RefreshDevices();
-        void ConnectBt(string addr);
+        bool ConnectBt(string addr);
     }
 
     public class NetHostInfo
@@ -51,7 +51,7 @@ namespace MusicShare
         }
     }
 
-    public interface INetworkConnector 
+    public interface INetworkConnector
     {
         event Action OnDiscoverReset;
         event Action<NetHostInfo> OnDiscoverFound;
@@ -62,7 +62,7 @@ namespace MusicShare
 
         void RefreshHosts();
 
-        void ConnectTo(string host, ushort port);
+        bool ConnectTo(string host, ushort port);
     }
 
     public class PlayerTrackInfo
@@ -100,21 +100,57 @@ namespace MusicShare
         void Clear();
     }
 
+    public enum PlayerState
+    {
+        Stopped,
+        Playing,
+        Paused
+    }
+
+    public interface IDeviceChannel
+    {
+        System.IO.Stream Stream { get; }
+    }
+
+    public interface IBtDeviceChannel : IDeviceChannel
+    {
+        BtDeviceEntryInfo Info { get; }
+    }
+
+    public interface INetDeviceChannel : IDeviceChannel
+    {
+        NetHostInfo Info { get; }
+    }
+
     public interface IPlayer
     {
+        event Action OnStateChanged;
+        event Action OnPositionChanged;
+        
+        event Action<IDeviceChannel> OnConnection;
+
         IBluetoothConnector BtConnector { get; }
         INetworkConnector NetConnector { get; }
         IPlayerPlaylist Playlist { get; }
 
+        PlayerState State { get; }
+
         bool IsPlaying { get; }
+        bool IsPaused { get; }
+        bool IsStopped { get; }
+        TimeSpan CurrentDuration { get; }
+        TimeSpan CurrentPosition { get; }
 
         void Start();
         void Pause();
         void Stop();
-        void Reset();
         void SetVolume(float volume);
         void PlayNextTrack();
         void PlayPrevTrack();
+        void JumpToTrack(int index);
+
+        ConnectivityInfoType GetConnectivityInfo();
+        void Connect(ConnectivityInfoType target, Action callback);
     }
 
     public interface IPlayerService

@@ -4,12 +4,13 @@ using Android.OS;
 using Android.Runtime;
 using Android.Views;
 using Android.Widget;
+using Java.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace MusicShare.Droid.Util
+namespace MusicShare
 {
     static class Extensions
     {
@@ -30,5 +31,17 @@ namespace MusicShare.Droid.Util
                 context.StartService(intent);
             }
         }
+        
+        public static IEnumerable<T> Of<T>(this IEnumeration seq)
+             where T : Java.Lang.Object
+        {
+            while(seq.HasMoreElements)
+            {
+                var obj = seq.NextElement();
+                if (obj is T t)
+                    yield return t;
+            }
+        }
+
     }
 }

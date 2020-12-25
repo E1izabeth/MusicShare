@@ -75,15 +75,15 @@ namespace MusicShare.ViewModels
         public HomeAppViewModel(AppViewModel app)
         {
             _menuPages.AddRange(new MenuPageViewModel[] {
-                this.DefaultPage = this.LoginPage = new LoginViewModel(app),
+                app.ConnectivityViewModel,
+                this.DefaultPage = app.PlaybackViewModel,
+                this.LoginPage = new LoginViewModel(app),
                 this.RegisterPage = new RegisterViewModel(app),
                 this.RestorePage = new RestoreViewModel(app),
-                new ConnectivityViewModel(app),
-                new PlaybackViewModel(app),
                 new AboutViewModel(app),
             });
 
-            this.CurrentPage = _menuPages[0];
+            this.CurrentPage = _menuPages[1];
         }
     }
 
@@ -97,10 +97,11 @@ namespace MusicShare.ViewModels
         public RootAppViewModel(AppViewModel app)
         {
             _menuPages.AddRange(new MenuPageViewModel[] {
-                this.DefaultPage = this.AboutPage,
+                app.ConnectivityViewModel,
+                this.DefaultPage = app.PlaybackViewModel,
                 new ProfileViewModel(app),
                 this.AboutPage = new AboutViewModel(app),
-                new LogoutViewModel(app)
+                new LogoutViewModel(app),
             });
 
             this.CurrentPage = this.AboutPage;

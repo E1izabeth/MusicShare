@@ -87,26 +87,35 @@
 
         <Grid Grid.Row="4" Grid.Column="1" RowSpacing="5">
             <RefreshView IsRefreshing="{Binding IsRefreshingDevices, Mode=TwoWay}" Command="{Binding RefreshDevicesCommand}">
-            <ListView Grid.Row="0" ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
+                <ListView Grid.Row="0" ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
                       HasUnevenRows="True" CachingStrategy="RecycleElement" RowHeight="-1">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <ViewCell>
-                            <Grid Grid.Row="1" Padding="10" ColumnSpacing="5">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-
-                                <Label Grid.Column="0" Text="{Binding Title}" LineBreakMode="WordWrap" />
-                                <Label Grid.Column="1" Text="{Binding Ping}" LineBreakMode="NoWrap" HorizontalOptions="EndAndExpand" />
-                                <Button Grid.Column="2" Text="Connect" IsVisible="{Binding IsConnectBtnVisible}" />
-                            </Grid>
-                        </ViewCell>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <ViewCell>
+                                <Grid Grid.Row="1" Padding="10" ColumnSpacing="5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.Resources>
+                                        <Style TargetType="Grid">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsConnected}" Value="True" TargetType="Grid">
+                                                    <Setter Property="Background" Value="LightGreen" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Resources>
+                                    
+                                    <Label Grid.Column="0" Text="{Binding Title}" LineBreakMode="WordWrap" />
+                                    <Label Grid.Column="1" Text="{Binding Ping}" LineBreakMode="NoWrap" HorizontalOptions="EndAndExpand" />
+                                    <Button Grid.Column="2" Text="Connect" IsVisible="{Binding IsConnectBtnVisible}" Command="{Binding ConnectCommand}" />
+                                </Grid>
+                            </ViewCell>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
             </RefreshView>
         </Grid>
     </Grid>

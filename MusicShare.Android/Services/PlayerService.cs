@@ -316,35 +316,36 @@ namespace MusicShare.Droid.Services
         /// <param name="focusChange"></param>
         void AudioManager.IOnAudioFocusChangeListener.OnAudioFocusChange(AudioFocus focusChange)
         {
-            //switch (focusChange)
-            //{
-            //    case AudioFocus.Gain:
-            //        if (_player == null)
-            //            this.IntializePlayer();
+            switch (focusChange)
+            {
+                case AudioFocus.Gain:
+                    //if (_player == null)
+                    //    this.IntializePlayer();
 
-            //        if (!_player.IsPlaying)
-            //        {
-            //            _player.Start();
-            //            _paused = false;
-            //        }
+                    if (!_player.IsPlaying)
+                    {
+                        _player.Start();
+                        _paused = false;
+                    }
 
-            //        _player.SetVolume(1.0f);//Turn it up!
-            //        break;
-            //    case AudioFocus.Loss:
-            //        //We have lost focus stop!
-            //        this.Stop();
-            //        break;
-            //    case AudioFocus.LossTransient:
-            //        //We have lost focus for a short time, but likely to resume so pause
-            //        this.Pause();
-            //        break;
-            //    case AudioFocus.LossTransientCanDuck:
-            //        //We have lost focus but should till play at a muted 10% volume
-            //        if (_player.IsPlaying)
-            //            _player.SetVolume(.1f);//turn it down!
-            //        break;
+                    _player.SetVolume(1.0f);//Turn it up!
+                    break;
+                case AudioFocus.Loss:
+                    //We have lost focus stop!
+                    // _player.Stop();
+                    _player.Pause();
+                    break;
+                case AudioFocus.LossTransient:
+                    //We have lost focus for a short time, but likely to resume so pause
+                    _player.Pause();
+                    break;
+                case AudioFocus.LossTransientCanDuck:
+                    //We have lost focus but should till play at a muted 10% volume
+                    if (_player.IsPlaying)
+                        _player.SetVolume(.1f);//turn it down!
+                    break;
 
-            //}
+            }
         }
 
         #endregion

@@ -2,10 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Xml.Serialization;
 using Xamarin.Forms;
 using ZXing;
 
@@ -15,7 +17,7 @@ namespace MusicShare.ViewModels.Home
     {
         #region bool IsConnectBtnVisible 
 
-        public bool IsConnectBtnVisible 
+        public bool IsConnectBtnVisible
         {
             get { return (bool)this.GetValue(IsConnectBtnVisibleProperty); }
             set { this.SetValue(IsConnectBtnVisibleProperty, value); }
@@ -31,11 +33,18 @@ namespace MusicShare.ViewModels.Home
 
         public abstract string Title { get; }
         public abstract string Ping { get; }
+        public abstract bool IsConnected { get; }
+
+        public ICommand ConnectCommand { get; }
 
         protected DeviceEntry(ConnectivityViewModel owner)
         {
             this.Owner = owner;
+
+            this.ConnectCommand = new Command(async () => this.DoConnect());
         }
+
+        protected abstract void DoConnect();
     }
 
     class BtDeviceEntry : DeviceEntry
@@ -44,11 +53,17 @@ namespace MusicShare.ViewModels.Home
 
         public override string Title { get { return this.Info.Name; } }
         public override string Ping { get { return "[" + this.Info.Address + "]"; } }
+        public override bool IsConnected { get { return false; } }
 
         public BtDeviceEntry(ConnectivityViewModel owner, BtDeviceEntryInfo info)
             : base(owner)
         {
             this.Info = info;
+        }
+
+        protected override async void DoConnect()
+        {
+            this.Owner.DoBtConnect(this);
         }
     }
 
@@ -58,11 +73,51 @@ namespace MusicShare.ViewModels.Home
 
         public override string Title { get { return this.Info.Name; } }
         public override string Ping { get { return this.Info.Ping.Truncate(TimeSpan.FromMilliseconds(1)).TotalSeconds + "[" + this.Info.Address + "]"; } }
+        public override bool IsConnected { get { return false; } }
 
         public NetDeviceEntry(ConnectivityViewModel owner, NetHostInfo info)
             : base(owner)
         {
             this.Info = info;
+        }
+
+        protected override async void DoConnect()
+        {
+            this.Owner.DoNetConnect(this);
+        }
+    }
+
+    class DeviceChannelEntry : DeviceEntry
+    {
+        private DeviceEntry _entry;
+
+        public override string Title { get { return _entry.Title; } }
+        public override string Ping { get { return _entry.Ping; } }
+        public override bool IsConnected { get { return true; } }
+
+        IDeviceChannel _chan;
+
+        public DeviceChannelEntry(ConnectivityViewModel owner, IDeviceChannel chan)
+            : base(owner)
+        {
+            _chan = chan;
+
+            switch (chan)
+            {
+                case IBtDeviceChannel btChan:
+                    _entry = new BtDeviceEntry(owner, btChan.Info);
+                    break;
+                case INetDeviceChannel netChan:
+                    _entry = new NetDeviceEntry(owner, netChan.Info);
+                    break;
+                default:
+                    throw new NotImplementedException("unknown channel kind");
+            }
+        }
+
+        protected override void DoConnect()
+        {
+            // do nothing
         }
     }
 
@@ -166,13 +221,13 @@ namespace MusicShare.ViewModels.Home
                                      propertyChanging: OnSelectedDeviceChanging);
 
         #endregion
-        
+
         static void OnSelectedDeviceChanging(BindableObject bindable, object oldValue, object newValue)
         {
-            if (oldValue is DeviceEntry deselected)
+            if (oldValue is DeviceEntry deselected && !deselected.IsConnected)
                 deselected.IsConnectBtnVisible = false;
 
-            if (newValue is DeviceEntry selected)
+            if (newValue is DeviceEntry selected && !selected.IsConnected)
                 selected.IsConnectBtnVisible = true;
         }
 
@@ -223,12 +278,28 @@ namespace MusicShare.ViewModels.Home
 
         #endregion
 
+
+        readonly List<DeviceEntry> _channels = new List<DeviceEntry>();
+        readonly AppViewModel _app;
+
         public ConnectivityViewModel(AppViewModel app)
             : base("Connectivity")
         {
+            _app = app;
+            this.IsSharingActivated = true;
+            this.IsBtSharingActivated = true;
+            this.IsLanSharingActivated = true;
+            this.IsWanSharingActivated = true;
+
             this.Devices = new ObservableCollection<DeviceEntry>();
 
             var player = ServiceContext.Instance.Player;
+
+            player.OnConnection += chan => this.InvokeAction(() => {
+                var entry = new DeviceChannelEntry(this, chan);
+                _channels.Add(entry);
+                this.Devices.Insert(0, entry);
+            });
 
             player.BtConnector.OnActivated += () => this.InvokeAction(() => {
                 this.IsBtSharingActivated = true;
@@ -245,17 +316,26 @@ namespace MusicShare.ViewModels.Home
             });
 
             this.MakeBeaconCommand = new Command(async () => {
-                // TODO generate connectivity0descriptive qr
-                this.GenerateQr(Convert.ToBase64String(Enumerable.Range(0, 20).SelectMany(n => Guid.NewGuid().ToByteArray()).ToArray()));
+                var info = player.GetConnectivityInfo();
+                var xs = new XmlSerializer(info.GetType());
+                var ms = new StringWriter();
+                xs.Serialize(ms, info);
+                ms.Flush();
+                this.GenerateQr(ms.ToString());
             });
             this.MakeSpotCommand = new Command(async () => {
-                // TODO connect by qr
-                this.ScanQr();
+                var connectivityInfo = await this.ScanQr();
+                app.OperationInProgress = true;
+                player.Connect(connectivityInfo, () => this.InvokeAction(() => {
+                    app.OperationInProgress = false;
+                }));
             });
             this.RefreshDevicesCommand = new Command(async () => {
                 this.IsRefreshingDevices = true;
 
                 this.Devices.Clear();
+                _channels.ForEach(c => this.Devices.Insert(0, c));
+
                 player.BtConnector.RefreshDevices();
                 player.NetConnector.RefreshHosts();
 
@@ -288,13 +368,72 @@ namespace MusicShare.ViewModels.Home
             this.IsQrVisible = true;
         }
 
-        private async void ScanQr()
+        private async Task<ConnectivityInfoType> ScanQr()
         {
             var scanner = new ZXing.Mobile.MobileBarcodeScanner();
 
             var result = await scanner.Scan();
-            var text = result.Text;
-            Log.Message("QR SCANNED", text);
+            if (result != null && !string.IsNullOrWhiteSpace(result.Text))
+            {
+                var xs = new XmlSerializer(typeof(ConnectivityInfoType));
+                var info = xs.Deserialize(new StringReader(result.Text)) as ConnectivityInfoType;
+                return info;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        class DemoDeviceEntry : DeviceEntry
+        {
+            private DeviceEntry _entry;
+
+            public override string Title { get { return _entry.Title; } }
+            public override string Ping { get { return _entry.Ping; } }
+            public override bool IsConnected { get { return true; } }
+
+            public DemoDeviceEntry(ConnectivityViewModel owner, DeviceEntry entry)
+                : base(owner)
+            {
+                _entry = entry;
+            }
+
+            protected override async void DoConnect()
+            {
+                // do nothing
+            }
+        }
+
+        private async void EmulateConnect(DeviceEntry entry)
+        {
+            _app.OperationInProgress = true;
+            await Task.Delay(2000);
+            _channels.Add(new DemoDeviceEntry(this, entry));
+            this.Devices.Insert(0, entry);
+            _app.OperationInProgress = false;
+        }
+
+        internal async void DoBtConnect(BtDeviceEntry btDeviceEntry)
+        {
+            //TODO
+            //_app.OperationInProgress = true;
+            //ServiceContext.Instance.Player.BtConnector.ConnectBt(btDeviceEntry.Info.Address);
+            //_app.OperationInProgress = false;
+
+            this.EmulateConnect(btDeviceEntry);
+        }
+
+        internal async void DoNetConnect(NetDeviceEntry netDeviceEntry)
+        {
+            //TODO
+
+            //var info = netDeviceEntry.Info;
+            //_app.OperationInProgress = true;
+            //ServiceContext.Instance.Player.NetConnector.ConnectTo(info.Address, info.Port);
+            //_app.OperationInProgress = false;
+
+            this.EmulateConnect(netDeviceEntry);
         }
     }
 

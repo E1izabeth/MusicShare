@@ -70,7 +70,7 @@
             <Button Grid.Column="6" Command="{Binding SelectRemoveTrackCommand}" Text="Remove" />
         </Grid>
 
-        <ListView Grid.Row="3" ItemsSource="{Binding Tracklist}"
+        <ListView Grid.Row="3" ItemsSource="{Binding Tracklist}" SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"
                   HasUnevenRows="True" CachingStrategy="RecycleElement" RowHeight="-1">
             <ListView.ItemTemplate>
                 <DataTemplate>

@@ -194,7 +194,7 @@ namespace MusicShare.Droid.Services
             }
         }
 
-        private void NegotiateConnection(Socket sck)
+        private bool NegotiateConnection(Socket sck)
         {
             sck.NoDelay = true;
 
@@ -220,10 +220,13 @@ namespace MusicShare.Droid.Services
                 sender.SendAsync(sendBuff);
 
                 var buff = new byte[_netServiceIdBytes.Length];
-                stream.BeginRead(buff, 0, buff.Length, ar => {
+                //stream.BeginRead(buff, 0, buff.Length, ar => {
+                if (stream.TryRead(buff))
+                {
                     try
                     {
-                        var read = stream.EndRead(ar);
+                        // var read = stream.EndRead(ar);
+                        int read = buff.Length;
                         if (read == _netServiceIdBytes.Length && Enumerable.SequenceEqual(buff, _netServiceIdBytes))
                         {
                             var nameLenBytes = new byte[4];
@@ -242,9 +245,9 @@ namespace MusicShare.Droid.Services
                                             if (cookieRcvd == cookie)
                                             {
                                                 var name = System.Text.Encoding.UTF8.GetString(nameBytes);
-                                                var ipep = sck.RemoteEndPoint as IPEndPoint;
                                                 var info = new NetHostInfo(name, address, DateTime.Now - stamp, port);
                                                 this.OnNewConnection(new NetDeviceConnection(info, stream, sender));
+                                                return true;
                                             }
                                         }
                                     }
@@ -263,7 +266,15 @@ namespace MusicShare.Droid.Services
                             _pendingConnections.Remove(key);
                         }
                     }
-                }, null);
+                }
+                else
+                {
+                    lock (_pendingConnectionsLock)
+                    {
+                        _pendingConnections.Remove(key);
+                    }
+                }
+                //}, null);
             }
             catch (Exception)
             {
@@ -272,14 +283,16 @@ namespace MusicShare.Droid.Services
                     _pendingConnections.Remove(key);
                 }
             }
+
+            return false;
         }
 
-        public void ConnectTo(string host, ushort port)
+        public bool ConnectTo(string host, ushort port)
         {
             var sck = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
             sck.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, 0);
             sck.Connect(host, port);
-            this.NegotiateConnection(sck);
+            return this.NegotiateConnection(sck);
         }
     }
 }

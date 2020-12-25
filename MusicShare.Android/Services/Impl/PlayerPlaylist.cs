@@ -50,6 +50,21 @@ namespace MusicShare.Droid.Services.Impl
         {
             _playerTracks.RemoveAt(index);
             this.OnRemoveItem?.Invoke(index);
+
+            {
+                var active = this.ActiveTrackIndex;
+                if (active == index) // TODO consider this case
+                {
+                    active = index - 1;
+                    this.ActiveTrackIndex = active;
+                }
+                else if (active > index)
+                {
+                    active--;
+                    this.ActiveTrackIndex = active;
+                    this.OnActiveItemChanged?.Invoke(active);
+                }
+            }
         }
 
         public void Move(int from, int to)
@@ -77,11 +92,39 @@ namespace MusicShare.Droid.Services.Impl
             }
         }
 
+        public bool TryRevert()
+        {
+            if (this.ActiveTrackIndex - 1 >= 0)
+            {
+                this.ActiveTrackIndex--;
+                this.OnActiveItemChanged?.Invoke(this.ActiveTrackIndex);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         public bool TryAdvance()
         {
             if (this.ActiveTrackIndex + 1 < _playerTracks.Count)
             {
                 this.ActiveTrackIndex++;
+                this.OnActiveItemChanged?.Invoke(this.ActiveTrackIndex);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool TryActivate(int index)
+        {
+            if (index > 0 && index < _playerTracks.Count)
+            {
+                this.ActiveTrackIndex = index;
                 this.OnActiveItemChanged?.Invoke(this.ActiveTrackIndex);
                 return true;
             }

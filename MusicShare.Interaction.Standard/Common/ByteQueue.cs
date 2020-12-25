@@ -13,11 +13,11 @@ namespace MusicShare.Interaction.Standard.Common
     public sealed class ByteQueue
     {
         // Private fields
-        private int fHead;
-        private int fTail;
-        private int fSize;
-        private int fSizeUntilCut;
-        private byte[] fInternalBuffer;
+        volatile int fHead;
+        volatile int fTail;
+        volatile int fSize;
+        volatile int fSizeUntilCut;
+        volatile byte[] fInternalBuffer;
 
         /// <summary>
         /// Gets the length of the byte queue

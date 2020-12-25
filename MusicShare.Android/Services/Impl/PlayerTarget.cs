@@ -54,9 +54,9 @@ namespace MusicShare.Droid.Services.Impl
 
         // ---------------------------------------------------------
 
-        public static MediaStreamPlayerTarget ToMediaStream(int streamId, int sampleRate, bool mono)
+        public static AsyncMediaStreamPlayerTarget ToAsyncMediaStream(int streamId, int sampleRate, bool mono)
         {
-            return new MediaStreamPlayerTarget(streamId, sampleRate, mono);
+            return new AsyncMediaStreamPlayerTarget(streamId, sampleRate, mono);
         }
 
         public static LocalAudioPayerTarget ToLocalAudio(int sampleRateInHz, bool mono)
@@ -129,7 +129,261 @@ namespace MusicShare.Droid.Services.Impl
         }
     }
 
-    class MediaStreamPlayerTarget : PlayerTarget
+    //class AsyncMediaStreamPlayerTargetOld : PlayerTarget
+    //{
+    //    public event Action<StreamDataPacket> OnData;
+
+    //    private void RaizeOnDataEvent(StreamDataPacket packet) { this.OnData?.Invoke(packet); }
+
+    //    readonly MediaFormat _mediaFormat;
+    //    readonly MediaCodec _encoder;
+    //    readonly int _sampleRate;
+    //    readonly int _channelsCount;
+
+    //    readonly FileInfo _file;
+    //    readonly FileStream _fileStream;
+    //    readonly FileOutputStream _fileOutputStream;
+    //    readonly MediaMuxer _muxer;
+    //    readonly int _audioTrackIndex;
+
+    //    public int StreamId { get; private set; }
+
+    //    readonly StreamDataHeadPacket _streamHead;
+
+    //    public AsyncMediaStreamPlayerTarget(int streamId, int sampleRate, bool mono)
+    //    {
+    //        this.StreamId = streamId;
+
+    //        _sampleRate = sampleRate;
+    //        _channelsCount = mono ? 1 : 2;
+
+    //        _streamHead = new StreamDataHeadPacket() {
+    //            DataFrame = new RawData(new byte[0], 0, 0),
+    //            StreamId = streamId,
+    //        };
+
+    //        MediaFormat wantedMediaFormat = MediaFormat.CreateAudioFormat(MediaFormat.MimetypeAudioAac, sampleRate, _channelsCount);
+    //        wantedMediaFormat.SetInteger(MediaFormat.KeyBitRate, 64 * 1024);
+    //        wantedMediaFormat.SetInteger(MediaFormat.KeyAacProfile, (int)MediaCodecProfileType.Aacobjecthe);
+
+    //        var encoder = MediaCodec.CreateEncoderByType(MediaFormat.MimetypeAudioAac);
+    //        encoder.SetCallback(new EncoderCallback(this));
+    //        encoder.Configure(wantedMediaFormat, null, null, MediaCodecConfigFlags.Encode);
+
+    //        _mediaFormat = wantedMediaFormat;
+    //        _encoder = encoder;
+
+    //        //Java.IO.File.CreateTempFile("MediaStreamPlayerTarget", null, context.getCacheDir())
+    //        _file = new FileInfo(Path.GetTempFileName());
+    //        _fileStream = _file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+
+    //        _fileOutputStream = new FileOutputStream(_file.FullName);
+    //        _muxer = new MediaMuxer(_fileOutputStream.FD, MuxerOutputType.Mpeg4);
+    //        _audioTrackIndex = _muxer.AddTrack(wantedMediaFormat);
+    //    }
+
+    //    protected override void StartImpl()
+    //    {
+    //        this.RaizeOnDataEvent(_streamHead);
+    //        _encoder.Start();
+    //        _muxer.Start();
+    //    }
+
+    //    readonly object _rawDataLock = new object();
+    //    readonly ByteQueue _rawData = new ByteQueue();
+
+    //    protected override void WriteImpl(RawData frame, bool isTail)
+    //    {
+    //        if (!this.IsDisposed)
+    //        {
+    //            lock (_rawDataLock)
+    //            {
+    //                _rawData.Enqueue(frame.Data, frame.Offset, frame.Size);
+    //                Monitor.Pulse(_rawDataLock);
+    //            }
+    //        }
+    //    }
+
+    //    long _position = 0;
+    //    byte[] _audioBuffer = null;
+
+    //    private bool DrainMuxedData()
+    //    {
+    //        _fileOutputStream.Flush();
+
+    //        var pos = Interlocked.Read(ref _position);
+    //        var len = _file.Length;
+    //        if (pos < len)
+    //        {
+    //            var step = (int)(len - pos);
+    //            Log.TraceMethod($"draining {step} bytes");
+    //            if (_audioBuffer == null || step > _audioBuffer.Length)
+    //                _audioBuffer = new byte[step];
+
+    //            _fileStream.Position = pos;
+    //            if (_fileStream.TryRead(_audioBuffer, 0, step))
+    //            {
+    //                this.OnData(new StreamDataBodyPacket() {
+    //                    DataFrame = new RawData(_audioBuffer, 0, step),
+    //                    StreamId = this.StreamId
+    //                });
+    //            }
+    //            else
+    //            {
+    //                this.FinishData();
+    //                return false;
+    //            }
+    //            Log.TraceMethod($"drained {step} bytes");
+    //        }
+
+    //        return true;
+    //    }
+
+    //    private void DrainMuxedDataEnd()
+    //    {
+    //        if (this.DrainMuxedData())
+    //            this.FinishData();
+    //    }
+
+    //    private void FinishData()
+    //    {
+    //        this.OnData(new StreamDataTailPacket() {
+    //            DataFrame = new RawData(new byte[0], 0, 0),
+    //            StreamId = this.StreamId
+    //        });
+    //    }
+
+    //    protected override void DisposeImpl()
+    //    {
+    //        _muxer.SafeDispose();
+    //        _fileOutputStream.SafeDispose();
+    //        _fileStream.SafeDispose();
+    //        _encoder.SafeDispose();
+
+    //        try { _file.Delete(); }
+    //        catch
+    //        {
+    //            Thread.Sleep(100);
+    //            _file.Delete();
+    //        }
+    //    }
+
+    //    class EncoderCallback : MediaCodec.Callback
+    //    {
+    //        const string _tag = "AsyncMediaStreamPlayerTarget.EncoderCallback";
+
+    //        readonly AsyncMediaStreamPlayerTarget _owner;
+
+    //        public EncoderCallback(AsyncMediaStreamPlayerTarget owner)
+    //        {
+    //            _owner = owner;
+    //        }
+
+    //        long _currDuration = 0;
+
+    //        public override void OnInputBufferAvailable(MediaCodec codec, int index)
+    //        {
+    //            Log.TraceMethod("enter");
+    //            var muxer = _owner._muxer;
+
+    //            ByteBuffer byteBuffer = codec.GetInputBuffer(index);
+    //            // Log.i(TAG, "onInputBufferAvailable: byteBuffer b/f readSampleData (decoder): " + byteBuffer);
+    //            if (byteBuffer != null)
+    //            {
+    //                try
+    //                {
+    //                    int size;
+    //                    lock (_owner._rawDataLock)
+    //                    {
+    //                        while (_owner._rawData.Length <= 0)
+    //                        {
+    //                            Log.TraceMethod($"waiting for {byteBuffer.Capacity()} bytes");
+    //                            Monitor.Wait(_owner._rawDataLock);
+    //                        }
+
+    //                        byteBuffer.Rewind();
+    //                        Log.TraceMethod($"retrieving {byteBuffer.Capacity()} bytes");
+    //                        size = _owner._rawData.DequeueRaw(byteBuffer.GetDirectBufferAddress(), byteBuffer.Capacity());
+    //                    }
+
+    //                    Log.TraceMethod("got data");
+
+    //                    if (size > -1)
+    //                    {
+    //                        codec.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.None);
+    //                    }
+    //                    else
+    //                    {
+    //                        codec.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.EndOfStream);
+    //                    }
+
+    //                    _currDuration += (size / _owner._channelsCount) * 1000000 / _owner._sampleRate;
+
+    //                    Log.TraceMethod("exit");
+    //                }
+    //                catch (Exception e)
+    //                {
+    //                    if (!_owner.IsDisposed)
+    //                    {
+    //                        Log.e(_tag, "EXCEPTION (decoder)!\nonInputBufferAvailable (decoder): ", e);
+    //                        throw e;
+    //                    }
+    //                }
+    //            }
+    //            else
+    //            {
+    //                Log.e(_tag, "onInputBufferAvailable = null");
+    //            }
+    //        }
+
+    //        public override void OnOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info)
+    //        {
+    //            Log.TraceMethod("enter");
+
+    //            ByteBuffer byteBuffer = codec.GetOutputBuffer(index);
+    //            // Log.i(TAG, "onOutputBufferAvailable: byteBuffer with data (decoder): " + byteBuffer);
+
+    //            var isTail = info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream);
+
+    //            if (byteBuffer != null)
+    //            {
+    //                Log.TraceMethod("writing");
+    //                _owner._muxer.WriteSampleData(_owner._audioTrackIndex, byteBuffer, info);
+
+    //                Log.TraceMethod("drain");
+    //                if (info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream))
+    //                    _owner.DrainMuxedDataEnd();
+    //                else
+    //                    _owner.DrainMuxedData();
+
+    //                Log.TraceMethod("release");
+    //                codec.ReleaseOutputBuffer(index, false);
+    //            }
+    //            else
+    //            {
+    //                if (info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream))
+    //                    _owner.DrainMuxedDataEnd();
+    //            }
+    //        }
+
+    //        public override void OnOutputFormatChanged(MediaCodec codec, MediaFormat format)
+    //        {
+    //            // should never happen for a typical audio track?? 
+    //            // Log.i(TAG, "onOutputFormatChanged (decoder): OLD=%s NEW=%s", codec.InputFormat, format);
+    //            //mEncoder.start();
+    //        }
+
+    //        public override void OnError(MediaCodec codec, MediaCodec.CodecException e)
+    //        {
+    //            if (!_owner.IsDisposed)
+    //            {
+    //                _owner.RaizeOnErrorEvent(new PlayerException(e));
+    //            }
+    //        }
+    //    }
+    //}
+
+    class AsyncMediaStreamPlayerTarget : PlayerTarget
     {
         public event Action<StreamDataPacket> OnData;
 
@@ -150,7 +404,7 @@ namespace MusicShare.Droid.Services.Impl
 
         readonly StreamDataHeadPacket _streamHead;
 
-        public MediaStreamPlayerTarget(int streamId, int sampleRate, bool mono)
+        public AsyncMediaStreamPlayerTarget(int streamId, int sampleRate, bool mono)
         {
             this.StreamId = streamId;
 
@@ -160,12 +414,13 @@ namespace MusicShare.Droid.Services.Impl
             _streamHead = new StreamDataHeadPacket() {
                 DataFrame = new RawData(new byte[0], 0, 0),
                 StreamId = streamId,
+                TotalSize = 0
             };
 
             MediaFormat wantedMediaFormat = MediaFormat.CreateAudioFormat(MediaFormat.MimetypeAudioAac, sampleRate, _channelsCount);
             wantedMediaFormat.SetInteger(MediaFormat.KeyBitRate, 64 * 1024);
             wantedMediaFormat.SetInteger(MediaFormat.KeyAacProfile, (int)MediaCodecProfileType.Aacobjecthe);
-            
+
             var encoder = MediaCodec.CreateEncoderByType(MediaFormat.MimetypeAudioAac);
             encoder.SetCallback(new EncoderCallback(this));
             encoder.Configure(wantedMediaFormat, null, null, MediaCodecConfigFlags.Encode);
@@ -191,6 +446,9 @@ namespace MusicShare.Droid.Services.Impl
 
         readonly object _rawDataLock = new object();
         readonly ByteQueue _rawData = new ByteQueue();
+        volatile bool _dataNeeded = false;
+        volatile ByteBuffer _buffer;
+        volatile int _bufferIndex;
 
         protected override void WriteImpl(RawData frame, bool isTail)
         {
@@ -199,7 +457,16 @@ namespace MusicShare.Droid.Services.Impl
                 lock (_rawDataLock)
                 {
                     _rawData.Enqueue(frame.Data, frame.Offset, frame.Size);
-                    Monitor.Pulse(_rawDataLock);
+
+                    if (_dataNeeded)
+                    {
+                        if (this.TryConsumeInputData(_buffer, _bufferIndex))
+                        {
+                            _buffer = null;
+                            _bufferIndex = -1;
+                            _dataNeeded = false;
+                        }
+                    }
                 }
             }
         }
@@ -216,6 +483,7 @@ namespace MusicShare.Droid.Services.Impl
             if (pos < len)
             {
                 var step = (int)(len - pos);
+                Log.TraceMethod($"draining {step} bytes");
                 if (_audioBuffer == null || step > _audioBuffer.Length)
                     _audioBuffer = new byte[step];
 
@@ -232,6 +500,7 @@ namespace MusicShare.Droid.Services.Impl
                     this.FinishData();
                     return false;
                 }
+                Log.TraceMethod($"drained {step} bytes");
             }
 
             return true;
@@ -266,21 +535,52 @@ namespace MusicShare.Droid.Services.Impl
             }
         }
 
+        long _currDuration = 0;
+
+        private bool TryConsumeInputData(ByteBuffer byteBuffer, int index)
+        {
+            int size;
+            if (_rawData.Length > 0)
+            {
+                byteBuffer.Rewind();
+                Log.TraceMethod($"retrieving {byteBuffer.Capacity()} bytes");
+                size = _rawData.DequeueRaw(byteBuffer.GetDirectBufferAddress(), byteBuffer.Capacity());
+
+                Log.TraceMethod("got data");
+
+                if (size > -1)
+                {
+                    _encoder.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.None);
+                }
+                else
+                {
+                    _encoder.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.EndOfStream);
+                }
+
+                _currDuration += (size / _channelsCount) * 1000000 / _sampleRate;
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         class EncoderCallback : MediaCodec.Callback
         {
-            const string _tag = "MediaStreamPlayerTarget.EncoderCallback";
+            const string _tag = "AsyncMediaStreamPlayerTarget.EncoderCallback";
 
-            readonly MediaStreamPlayerTarget _owner;
+            readonly AsyncMediaStreamPlayerTarget _owner;
 
-            public EncoderCallback(MediaStreamPlayerTarget owner)
+            public EncoderCallback(AsyncMediaStreamPlayerTarget owner)
             {
                 _owner = owner;
             }
 
-            long _currDuration = 0;
-
             public override void OnInputBufferAvailable(MediaCodec codec, int index)
             {
+                Log.TraceMethod("enter");
                 var muxer = _owner._muxer;
 
                 ByteBuffer byteBuffer = codec.GetInputBuffer(index);
@@ -289,27 +589,18 @@ namespace MusicShare.Droid.Services.Impl
                 {
                     try
                     {
-                        int size;
                         lock (_owner._rawDataLock)
                         {
-                            while (_owner._rawData.Length <= 0)
-                                Monitor.Wait(_owner._rawDataLock);
-
-                            byteBuffer.Rewind();
-                            size = _owner._rawData.DequeueRaw(byteBuffer.GetDirectBufferAddress(), byteBuffer.Capacity());
+                            if (!_owner.TryConsumeInputData(byteBuffer, index))
+                            {
+                                Log.TraceMethod($"waiting for {byteBuffer.Capacity()} bytes");
+                                _owner._buffer = byteBuffer;
+                                _owner._bufferIndex = index;
+                                _owner._dataNeeded = true;
+                            }
                         }
 
-
-                        if (size > -1)
-                        {
-                            codec.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.None);
-                        }
-                        else
-                        {
-                            codec.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.EndOfStream);
-                        }
-
-                        _currDuration += (size / _owner._channelsCount) * 1000000 / _owner._sampleRate;
+                        Log.TraceMethod("exit");
                     }
                     catch (Exception e)
                     {
@@ -328,6 +619,8 @@ namespace MusicShare.Droid.Services.Impl
 
             public override void OnOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info)
             {
+                Log.TraceMethod("enter");
+
                 ByteBuffer byteBuffer = codec.GetOutputBuffer(index);
                 // Log.i(TAG, "onOutputBufferAvailable: byteBuffer with data (decoder): " + byteBuffer);
 
@@ -335,13 +628,16 @@ namespace MusicShare.Droid.Services.Impl
 
                 if (byteBuffer != null)
                 {
+                    Log.TraceMethod("writing");
                     _owner._muxer.WriteSampleData(_owner._audioTrackIndex, byteBuffer, info);
 
+                    Log.TraceMethod("drain");
                     if (info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream))
                         _owner.DrainMuxedDataEnd();
                     else
                         _owner.DrainMuxedData();
 
+                    Log.TraceMethod("release");
                     codec.ReleaseOutputBuffer(index, false);
                 }
                 else
@@ -367,4 +663,288 @@ namespace MusicShare.Droid.Services.Impl
             }
         }
     }
+
+    //class ThreadedMediaStreamPlayerTarget : PlayerTarget
+    //{
+    //    public event Action<StreamDataPacket> OnData;
+
+    //    private void RaizeOnDataEvent(StreamDataPacket packet) { this.OnData?.Invoke(packet); }
+
+    //    readonly MediaFormat _mediaFormat;
+    //    readonly MediaCodec _encoder;
+    //    readonly int _sampleRate;
+    //    readonly int _channelsCount;
+
+    //    readonly FileInfo _file;
+    //    readonly FileStream _fileStream;
+    //    readonly FileOutputStream _fileOutputStream;
+    //    readonly MediaMuxer _muxer;
+    //    readonly int _audioTrackIndex;
+
+    //    public int StreamId { get; private set; }
+
+    //    readonly StreamDataHeadPacket _streamHead;
+
+    //    readonly Thread _thread;
+
+    //    public ThreadedMediaStreamPlayerTarget(int streamId, int sampleRate, bool mono)
+    //    {
+    //        this.StreamId = streamId;
+
+    //        _sampleRate = sampleRate;
+    //        _channelsCount = mono ? 1 : 2;
+
+    //        _streamHead = new StreamDataHeadPacket() {
+    //            DataFrame = new RawData(new byte[0], 0, 0),
+    //            StreamId = streamId,
+    //        };
+
+    //        MediaFormat wantedMediaFormat = MediaFormat.CreateAudioFormat(MediaFormat.MimetypeAudioAac, sampleRate, _channelsCount);
+    //        wantedMediaFormat.SetInteger(MediaFormat.KeyBitRate, 64 * 1024);
+    //        wantedMediaFormat.SetInteger(MediaFormat.KeyAacProfile, (int)MediaCodecProfileType.Aacobjecthe);
+
+    //        var encoder = MediaCodec.CreateEncoderByType(MediaFormat.MimetypeAudioAac);
+    //        // encoder.SetCallback(new EncoderCallback(this));
+    //        encoder.Configure(wantedMediaFormat, null, null, MediaCodecConfigFlags.Encode);
+
+    //        _mediaFormat = wantedMediaFormat;
+    //        _encoder = encoder;
+
+    //        //Java.IO.File.CreateTempFile("MediaStreamPlayerTarget", null, context.getCacheDir())
+    //        _file = new FileInfo(Path.GetTempFileName());
+    //        _fileStream = _file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+
+    //        _fileOutputStream = new FileOutputStream(_file.FullName);
+    //        _muxer = new MediaMuxer(_fileOutputStream.FD, MuxerOutputType.Mpeg4);
+    //        _audioTrackIndex = _muxer.AddTrack(wantedMediaFormat);
+
+
+    //        _thread = new Thread(this.EncoderThreadProc) {
+    //            IsBackground = true
+    //        };
+    //    }
+
+    //    protected override void StartImpl()
+    //    {
+    //        _thread.Start();
+    //    }
+
+    //    readonly object _rawDataLock = new object();
+    //    readonly ByteQueue _rawData = new ByteQueue();
+    //    volatile bool _dataNeeded = false;
+    //    volatile ByteBuffer _buffer;
+    //    volatile int _bufferIndex;
+
+    //    protected override void WriteImpl(RawData frame, bool isTail)
+    //    {
+    //        if (!this.IsDisposed)
+    //        {
+    //            lock (_rawDataLock)
+    //            {
+    //                _rawData.Enqueue(frame.Data, frame.Offset, frame.Size);
+    //                Monitor.Pulse(_rawDataLock);
+    //            }
+    //        }
+    //    }
+
+    //    long _position = 0;
+    //    byte[] _audioBuffer = null;
+
+    //    private bool DrainMuxedData()
+    //    {
+    //        _fileOutputStream.Flush();
+
+    //        var pos = Interlocked.Read(ref _position);
+    //        var len = _file.Length;
+    //        if (pos < len)
+    //        {
+    //            var step = (int)(len - pos);
+    //            Log.TraceMethod($"draining {step} bytes");
+    //            if (_audioBuffer == null || step > _audioBuffer.Length)
+    //                _audioBuffer = new byte[step];
+
+    //            _fileStream.Position = pos;
+    //            if (_fileStream.TryRead(_audioBuffer, 0, step))
+    //            {
+    //                this.OnData(new StreamDataBodyPacket() {
+    //                    DataFrame = new RawData(_audioBuffer, 0, step),
+    //                    StreamId = this.StreamId
+    //                });
+    //            }
+    //            else
+    //            {
+    //                this.FinishData();
+    //                return false;
+    //            }
+    //            Log.TraceMethod($"drained {step} bytes");
+    //        }
+
+    //        return true;
+    //    }
+
+    //    private void DrainMuxedDataEnd()
+    //    {
+    //        if (this.DrainMuxedData())
+    //            this.FinishData();
+    //    }
+
+    //    private void FinishData()
+    //    {
+    //        this.OnData(new StreamDataTailPacket() {
+    //            DataFrame = new RawData(new byte[0], 0, 0),
+    //            StreamId = this.StreamId
+    //        });
+    //    }
+
+    //    protected override void DisposeImpl()
+    //    {
+    //        _muxer.SafeDispose();
+    //        _fileOutputStream.SafeDispose();
+    //        _fileStream.SafeDispose();
+    //        _encoder.SafeDispose();
+
+    //        try { _file.Delete(); }
+    //        catch
+    //        {
+    //            Thread.Sleep(100);
+    //            _file.Delete();
+    //        }
+    //    }
+
+    //    long _currDuration = 0;
+
+    //    private void EncoderThreadProc()
+    //    {
+    //        this.RaizeOnDataEvent(_streamHead);
+    //        _encoder.Start();
+    //        _muxer.Start();
+
+    //    }
+
+    //    private bool TryConsumeInputData(ByteBuffer byteBuffer, int index)
+    //    {
+    //        int size;
+    //        if (_rawData.Length > 0)
+    //        {
+    //            byteBuffer.Rewind();
+    //            Log.TraceMethod($"retrieving {byteBuffer.Capacity()} bytes");
+    //            size = _rawData.DequeueRaw(byteBuffer.GetDirectBufferAddress(), byteBuffer.Capacity());
+
+    //            Log.TraceMethod("got data");
+
+    //            if (size > -1)
+    //            {
+    //                _encoder.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.None);
+    //            }
+    //            else
+    //            {
+    //                _encoder.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.EndOfStream);
+    //            }
+
+    //            _currDuration += (size / _channelsCount) * 1000000 / _sampleRate;
+
+    //            return true;
+    //        }
+    //        else
+    //        {
+    //            return false;
+    //        }
+    //    }
+
+    //    class EncoderCallback : MediaCodec.Callback
+    //    {
+    //        const string _tag = "AsyncMediaStreamPlayerTarget.EncoderCallback";
+
+    //        readonly AsyncMediaStreamPlayerTarget _owner;
+
+    //        public EncoderCallback(AsyncMediaStreamPlayerTarget owner)
+    //        {
+    //            _owner = owner;
+    //        }
+
+    //        public override void OnInputBufferAvailable(MediaCodec codec, int index)
+    //        {
+    //            Log.TraceMethod("enter");
+    //            var muxer = _owner._muxer;
+
+    //            ByteBuffer byteBuffer = codec.GetInputBuffer(index);
+    //            // Log.i(TAG, "onInputBufferAvailable: byteBuffer b/f readSampleData (decoder): " + byteBuffer);
+    //            if (byteBuffer != null)
+    //            {
+    //                try
+    //                {
+    //                    lock (_owner._rawDataLock)
+    //                    {
+    //                        if (!_owner.TryConsumeInputData(byteBuffer, index))
+    //                        {
+    //                            Log.TraceMethod($"waiting for {byteBuffer.Capacity()} bytes");
+    //                            _owner._buffer = byteBuffer;
+    //                            _owner._bufferIndex = index;
+    //                            _owner._dataNeeded = true;
+    //                        }
+    //                    }
+
+    //                    Log.TraceMethod("exit");
+    //                }
+    //                catch (Exception e)
+    //                {
+    //                    if (!_owner.IsDisposed)
+    //                    {
+    //                        Log.e(_tag, "EXCEPTION (decoder)!\nonInputBufferAvailable (decoder): ", e);
+    //                        throw e;
+    //                    }
+    //                }
+    //            }
+    //            else
+    //            {
+    //                Log.e(_tag, "onInputBufferAvailable = null");
+    //            }
+    //        }
+
+    //        public override void OnOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info)
+    //        {
+    //            Log.TraceMethod("enter");
+
+    //            ByteBuffer byteBuffer = codec.GetOutputBuffer(index);
+    //            // Log.i(TAG, "onOutputBufferAvailable: byteBuffer with data (decoder): " + byteBuffer);
+
+    //            var isTail = info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream);
+
+    //            if (byteBuffer != null)
+    //            {
+    //                Log.TraceMethod("writing");
+    //                _owner._muxer.WriteSampleData(_owner._audioTrackIndex, byteBuffer, info);
+
+    //                Log.TraceMethod("drain");
+    //                if (info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream))
+    //                    _owner.DrainMuxedDataEnd();
+    //                else
+    //                    _owner.DrainMuxedData();
+
+    //                Log.TraceMethod("release");
+    //                codec.ReleaseOutputBuffer(index, false);
+    //            }
+    //            else
+    //            {
+    //                if (info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream))
+    //                    _owner.DrainMuxedDataEnd();
+    //            }
+    //        }
+
+    //        public override void OnOutputFormatChanged(MediaCodec codec, MediaFormat format)
+    //        {
+    //            // should never happen for a typical audio track?? 
+    //            // Log.i(TAG, "onOutputFormatChanged (decoder): OLD=%s NEW=%s", codec.InputFormat, format);
+    //            //mEncoder.start();
+    //        }
+
+    //        public override void OnError(MediaCodec codec, MediaCodec.CodecException e)
+    //        {
+    //            if (!_owner.IsDisposed)
+    //            {
+    //                _owner.RaizeOnErrorEvent(new PlayerException(e));
+    //            }
+    //        }
+    //    }
+    //}
 }

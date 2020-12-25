@@ -52,12 +52,7 @@ namespace MusicShare.ViewModels.Home
             var fname = System.IO.Path.GetFileName(info.FilePathOrUri);
             this.Header = (string.IsNullOrWhiteSpace(info.Artist) || string.IsNullOrWhiteSpace(info.Title)) ? fname : info.Artist + " - " + info.Title;
 
-            this.Duration = info.Duration.Minutes.ToString().PadLeft(2, '0') + ":" + info.Duration.Seconds.ToString().PadLeft(2, '0');
-
-            if (info.Duration > TimeSpan.FromHours(1))
-            {
-                this.Duration = info.Duration.Truncate(TimeSpan.FromHours(1)).TotalHours.ToString() + ":" + this.Duration;
-            }
+            this.Duration = info.Duration.FormatPlaybackTime();
         }
     }
 
@@ -101,6 +96,26 @@ namespace MusicShare.ViewModels.Home
         // Using a BindableProperty as the backing store for ActiveTrack. This enables animation, styling, binding, etc...
         public static readonly BindableProperty ActiveTrackProperty =
             BindableProperty.Create("ActiveTrack", typeof(TrackInfo), typeof(PlaybackViewModel), default(TrackInfo));
+
+        #endregion
+
+        #region TrackInfo SelectedTrack 
+
+        public TrackInfo SelectedTrack
+        {
+            get { return (TrackInfo)this.GetValue(SelectedTrackProperty); }
+            set { this.SetValue(SelectedTrackProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for SelectedTrack. This enables animation, styling, binding, etc...
+        public static readonly BindableProperty SelectedTrackProperty =
+            BindableProperty.Create("SelectedTrack", typeof(TrackInfo), typeof(PlaybackViewModel), default(TrackInfo), propertyChanged: OnSelectedTrackPropertyChanged);
+
+        private static void OnSelectedTrackPropertyChanged(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is PlaybackViewModel model)
+                model.OnSelectedTrackChanged(oldValue as TrackInfo, newValue as TrackInfo);
+        }
 
         #endregion
 
@@ -257,6 +272,27 @@ namespace MusicShare.ViewModels.Home
                 track.IsActive = true;
                 this.ActiveTrack = track;
             });
+            player.OnStateChanged += () => this.InvokeAction(() => {
+                this.PlayCmdAvailable = player.IsPaused || player.IsStopped;
+                this.PauseCmdAvailable = player.IsPlaying;
+                this.StopCmdAvailable = player.IsPlaying || player.IsPaused;
+
+                if (player.IsStopped)
+                    this.StatusString = "...";
+            });
+            player.OnPositionChanged += () => this.InvokeAction(() => {
+                this.StatusString = player.CurrentPosition.FormatPlaybackTime();
+            });
+        }
+
+        private void OnSelectedTrackChanged(TrackInfo oldTrack, TrackInfo newTrack)
+        {
+            if (newTrack != null)
+            {
+                var index = this.Tracklist.IndexOf(newTrack);
+                ServiceContext.Instance.Player.JumpToTrack(index);
+                this.PlayCommand.Execute(null);
+            }
         }
 
         private void ResetSelection()
