@@ -45,6 +45,15 @@ namespace MusicShare.ViewModels.Home
         }
 
         protected abstract void DoConnect();
+
+        //public void ForceBindingds()
+        //{
+        //    this.OnPropertyChanged("Title");
+        //    this.OnPropertyChanged("Ping");
+        //    this.OnPropertyChanged("IsConnected");
+        //    this.OnPropertyChanged("IsConnectBtnVisible");
+        //    this.OnPropertyChanged("ConnectCommand");
+        //}
     }
 
     class BtDeviceEntry : DeviceEntry
@@ -296,9 +305,9 @@ namespace MusicShare.ViewModels.Home
             var player = ServiceContext.Instance.Player;
 
             player.OnConnection += chan => this.InvokeAction(() => {
-                var entry = new DeviceChannelEntry(this, chan);
-                _channels.Add(entry);
-                this.Devices.Insert(0, entry);
+                var newEntry = new DeviceChannelEntry(this, chan);
+                _channels.Add(newEntry);
+                this.Devices.Insert(0, newEntry);
             });
 
             player.BtConnector.OnActivated += () => this.InvokeAction(() => {
@@ -325,10 +334,13 @@ namespace MusicShare.ViewModels.Home
             });
             this.MakeSpotCommand = new Command(async () => {
                 var connectivityInfo = await this.ScanQr();
-                app.OperationInProgress = true;
-                player.Connect(connectivityInfo, () => this.InvokeAction(() => {
-                    app.OperationInProgress = false;
-                }));
+                if (connectivityInfo != null)
+                {
+                    app.OperationInProgress = true;
+                    player.Connect(connectivityInfo, () => this.InvokeAction(() => {
+                        app.OperationInProgress = false;
+                    }));
+                }
             });
             this.RefreshDevicesCommand = new Command(async () => {
                 this.IsRefreshingDevices = true;
@@ -343,7 +355,6 @@ namespace MusicShare.ViewModels.Home
                 this.IsRefreshingDevices = false;
             });
             this.CloseQrCommand = new Command(async () => {
-                this.QrContent = null;
                 this.IsQrVisible = false;
             });
         }
@@ -372,15 +383,23 @@ namespace MusicShare.ViewModels.Home
         {
             var scanner = new ZXing.Mobile.MobileBarcodeScanner();
 
-            var result = await scanner.Scan();
-            if (result != null && !string.IsNullOrWhiteSpace(result.Text))
+            try
             {
-                var xs = new XmlSerializer(typeof(ConnectivityInfoType));
-                var info = xs.Deserialize(new StringReader(result.Text)) as ConnectivityInfoType;
-                return info;
+                var result = await scanner.Scan();
+                if (result != null && !string.IsNullOrWhiteSpace(result.Text))
+                {
+                    var xs = new XmlSerializer(typeof(ConnectivityInfoType));
+                    var info = xs.Deserialize(new StringReader(result.Text)) as ConnectivityInfoType;
+                    return info;
+                }
+                else
+                {
+                    return null;
+                }
             }
-            else
+            catch (Exception ex)
             {
+                Log.TraceMethod("Failed to scan QR: " + ex.ToString());
                 return null;
             }
         }
@@ -408,9 +427,12 @@ namespace MusicShare.ViewModels.Home
         private async void EmulateConnect(DeviceEntry entry)
         {
             _app.OperationInProgress = true;
+            
             await Task.Delay(2000);
-            _channels.Add(new DemoDeviceEntry(this, entry));
-            this.Devices.Insert(0, entry);
+            var newEntry = new DemoDeviceEntry(this, entry);
+            _channels.Add(newEntry);
+            this.Devices.Insert(0, newEntry);
+
             _app.OperationInProgress = false;
         }
 

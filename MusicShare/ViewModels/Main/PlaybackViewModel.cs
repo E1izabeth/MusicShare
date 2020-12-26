@@ -291,7 +291,7 @@ namespace MusicShare.ViewModels.Home
             {
                 var index = this.Tracklist.IndexOf(newTrack);
                 ServiceContext.Instance.Player.JumpToTrack(index);
-                this.PlayCommand.Execute(null);
+                this.SelectedTrack = null;
             }
         }
 
@@ -299,7 +299,7 @@ namespace MusicShare.ViewModels.Home
         {
             this.ShowSelectors = false;
             var tracks = this.Tracklist;
-            for (int i = 0; i < tracks.Count;)
+            for (int i = 0; i < tracks.Count; i++)
             {
                 tracks[i].IsSelected = false;
             }

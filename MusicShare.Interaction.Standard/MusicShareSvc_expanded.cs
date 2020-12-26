@@ -34,6 +34,8 @@ public partial class ConnectivityInfoType {
     
     private string deviceNameField;
     
+    private string authTokenField;
+    
     /// <remarks/>
     [System.Xml.Serialization.XmlElementAttribute("Login")]
     public string[] Login {
@@ -85,6 +87,17 @@ public partial class ConnectivityInfoType {
         }
         set {
             this.deviceNameField = value;
+        }
+    }
+    
+    /// <remarks/>
+    [System.Xml.Serialization.XmlAttributeAttribute()]
+    public string AuthToken {
+        get {
+            return this.authTokenField;
+        }
+        set {
+            this.authTokenField = value;
         }
     }
 }

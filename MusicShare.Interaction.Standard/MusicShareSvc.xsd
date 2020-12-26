@@ -16,6 +16,7 @@
       <xs:element name="BluetoothAddress" type="string" minOccurs="0" maxOccurs="1" />
     </xs:sequence>
     <xs:attribute name="DeviceName" type="string" use="required" />
+    <xs:attribute name="AuthToken" type="string" use="required" />
   </xs:complexType>
 
   <xs:complexType name="IpEndPointInfo" >

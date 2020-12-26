@@ -27,6 +27,7 @@ namespace MusicShare.Droid.Services.Impl
         readonly List<PlayerTrackInfo> _playerTracks = new List<PlayerTrackInfo>();
 
         public int ActiveTrackIndex { get; private set; }
+        public bool IsEmpty { get { return _playerTracks.Count == 0; } }
 
         public PlayerPlaylist(Context context)
         {
@@ -122,7 +123,7 @@ namespace MusicShare.Droid.Services.Impl
 
         public bool TryActivate(int index)
         {
-            if (index > 0 && index < _playerTracks.Count)
+            if (index >= 0 && index < _playerTracks.Count)
             {
                 this.ActiveTrackIndex = index;
                 this.OnActiveItemChanged?.Invoke(this.ActiveTrackIndex);

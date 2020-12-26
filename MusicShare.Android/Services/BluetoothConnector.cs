@@ -114,7 +114,7 @@ namespace MusicShare.Droid.Services
         readonly Dictionary<string, BtDeviceEntry> _knownDevices = new Dictionary<string, BtDeviceEntry>();
 
         public bool IsEnabled { get; private set; } = false;
-        public bool IsDiscovering { get; private set; } = false;
+        // public bool IsDiscovering { get; private set; } = false;
 
         readonly ManualResetEvent _disposingEv = new ManualResetEvent(false);
         readonly ManualResetEvent _acceptingThreadEv = new ManualResetEvent(false);
@@ -162,14 +162,15 @@ namespace MusicShare.Droid.Services
 
         public void RefreshDevices()
         {
-            if (this.IsEnabled && !this.IsDiscovering && !BluetoothAdapter.DefaultAdapter.IsDiscovering)
+            // if (this.IsEnabled && !this.IsDiscovering && !BluetoothAdapter.DefaultAdapter.IsDiscovering)
+            if (this.IsEnabled && !BluetoothAdapter.DefaultAdapter.IsDiscovering)
             {
                 _knownDevices.Clear();
                 this.OnDiscoverReset?.Invoke();
 
                 BluetoothAdapter.DefaultAdapter.BondedDevices.ForEach(this.OnDeviceDiscovered);
 
-                this.IsDiscovering = true;
+                // this.IsDiscovering = true;
                 BluetoothAdapter.DefaultAdapter.StartDiscovery();
             }
         }
@@ -183,10 +184,10 @@ namespace MusicShare.Droid.Services
 
         private void OnDiscoveryFinished()
         {
-            if (this.IsDiscovering)
-            {
-                this.IsDiscovering = false;
-            }
+            //if (this.IsDiscovering)
+            //{
+            //    this.IsDiscovering = false;
+            //}
         }
 
         #endregion

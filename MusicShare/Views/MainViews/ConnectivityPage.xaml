@@ -107,7 +107,7 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Grid.Resources>
-                                    
+
                                     <Label Grid.Column="0" Text="{Binding Title}" LineBreakMode="WordWrap" />
                                     <Label Grid.Column="1" Text="{Binding Ping}" LineBreakMode="NoWrap" HorizontalOptions="EndAndExpand" />
                                     <Button Grid.Column="2" Text="Connect" IsVisible="{Binding IsConnectBtnVisible}" Command="{Binding ConnectCommand}" />
@@ -120,8 +120,10 @@
         </Grid>
     </Grid>
 
-    <Frame IsVisible="{Binding IsQrVisible}" BackgroundColor="LightGray" Opacity="0.25">
-        <Grid Margin="20" Opacity="1">
+    <Grid IsVisible="{Binding IsQrVisible}">
+        <Grid  BackgroundColor="LightGray" Opacity="0.5" />
+
+        <Grid Margin="20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
@@ -129,6 +131,6 @@
             <ContentPresenter Content="{Binding QrContent}" />
             <Button Grid.Row="1" Text="Close" Command="{Binding CloseQrCommand}" />
         </Grid>
-    </Frame>
+    </Grid>
 
 </Grid>

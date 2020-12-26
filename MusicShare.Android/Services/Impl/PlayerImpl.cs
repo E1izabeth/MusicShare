@@ -114,6 +114,8 @@ namespace MusicShare.Droid.Services.Impl
 
         public PlayerImpl(Service service)
         {
+            this.UpdateState(PlayerState.Stopped);
+
             _service = service;
             _connectivityManager = ConnectivityManager.FromContext(_service.ApplicationContext);
 
@@ -145,6 +147,8 @@ namespace MusicShare.Droid.Services.Impl
                 this.OnConnection?.Invoke(chan);
             };
         }
+
+        readonly HashSet<string> _authTokens = new HashSet<string>();
 
         public ConnectivityInfoType GetConnectivityInfo()
         {
@@ -179,6 +183,10 @@ namespace MusicShare.Droid.Services.Impl
                 }
                 info.IpV4EndPoints = v4list.ToArray();
                 info.IpV6EndPoints = v6list.ToArray();
+
+                var token = Guid.NewGuid().ToString();
+                _authTokens.Add(token);
+                info.AuthToken = token;
             }
             catch (Exception ex)
             {
@@ -244,6 +252,9 @@ namespace MusicShare.Droid.Services.Impl
 
         public void Start()
         {
+            if (this.Playlist.IsEmpty)
+                return;
+
             if (this.IsStopped)
             {
                 this.Cleanup();
@@ -366,6 +377,8 @@ namespace MusicShare.Droid.Services.Impl
 
             if (this.Playlist.TryRevert())
                 this.Start();
+
+            // this.Test2();
         }
 
         public void JumpToTrack(int index)

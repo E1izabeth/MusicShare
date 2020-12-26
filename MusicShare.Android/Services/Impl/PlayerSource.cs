@@ -99,7 +99,7 @@ namespace MusicShare.Droid.Services.Impl
 
             public void Proceed()
             {
-                if (_isFinished || !this.IsWorking) // _isPaused
+                if (_isFinished || !this.IsWorking || _owner.IsDisposed) // _isPaused
                     return;
 
                 _isWorking = true;

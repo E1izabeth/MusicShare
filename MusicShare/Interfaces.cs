@@ -28,7 +28,7 @@ namespace MusicShare
         // event Action<BtDeviceConnection> OnNewConnection;
 
         bool IsEnabled { get; }
-        bool IsDiscovering { get; }
+        // bool IsDiscovering { get; }
 
 
         void RefreshDevices();
