@@ -45,7 +45,7 @@ namespace MusicShare.Droid
 
             global::Xamarin.Forms.FormsMaterial.Init(this, savedInstanceState);
 
-            var app = new App();
+            var app = App.Instance; //  new App();
             this.LoadApplication(app);
             this.AppModel = app.AppModel;
 

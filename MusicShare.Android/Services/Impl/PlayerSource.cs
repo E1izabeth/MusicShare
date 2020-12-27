@@ -81,7 +81,7 @@ namespace MusicShare.Droid.Services.Impl
             readonly MediaExtractor _extractor;
             readonly MediaCodec _codec;
 
-            volatile bool _isWorking = true, _isFinished = false, _isPaused = false;
+            volatile bool _isWorking = true, _isFinished = false; //, _isPaused = false;
             public bool IsWorking
             {
                 get { return _isWorking; }
@@ -99,7 +99,8 @@ namespace MusicShare.Droid.Services.Impl
 
             public void Proceed()
             {
-                if (_isFinished || !this.IsWorking || _owner.IsDisposed) // _isPaused
+                // !this.IsWorking ||
+                if (_isFinished || _owner.IsDisposed) // _isPaused
                     return;
 
                 _isWorking = true;
@@ -156,7 +157,7 @@ namespace MusicShare.Droid.Services.Impl
                 }
                 else
                 {
-                    _isPaused = true;
+                    // _isPaused = true;
                 }
             }
 
@@ -190,7 +191,8 @@ namespace MusicShare.Droid.Services.Impl
                     //Log.i(TAG, "onOutputBufferAvailable (decoder): added in queue: %s\n%s %s %s %s", buffer2, info2.offset, info2.size, info2.presentationTimeUs, info2.flags);
                     #endregion
 
-                    codec.ReleaseOutputBuffer(index, false);
+                    if (!_owner.IsDisposed)
+                        codec.ReleaseOutputBuffer(index, false);
                 }
                 else
                 {

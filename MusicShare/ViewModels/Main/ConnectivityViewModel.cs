@@ -404,58 +404,57 @@ namespace MusicShare.ViewModels.Home
             }
         }
 
-        class DemoDeviceEntry : DeviceEntry
-        {
-            private DeviceEntry _entry;
+        //class DemoDeviceEntry : DeviceEntry
+        //{
+        //    private DeviceEntry _entry;
 
-            public override string Title { get { return _entry.Title; } }
-            public override string Ping { get { return _entry.Ping; } }
-            public override bool IsConnected { get { return true; } }
+        //    public override string Title { get { return _entry.Title; } }
+        //    public override string Ping { get { return _entry.Ping; } }
+        //    public override bool IsConnected { get { return true; } }
 
-            public DemoDeviceEntry(ConnectivityViewModel owner, DeviceEntry entry)
-                : base(owner)
-            {
-                _entry = entry;
-            }
+        //    public DemoDeviceEntry(ConnectivityViewModel owner, DeviceEntry entry)
+        //        : base(owner)
+        //    {
+        //        _entry = entry;
+        //    }
 
-            protected override async void DoConnect()
-            {
-                // do nothing
-            }
-        }
+        //    protected override async void DoConnect()
+        //    {
+        //        // do nothing
+        //    }
+        //}
 
-        private async void EmulateConnect(DeviceEntry entry)
-        {
-            _app.OperationInProgress = true;
+        //private async void EmulateConnect(DeviceEntry entry)
+        //{
+        //    _app.OperationInProgress = true;
             
-            await Task.Delay(2000);
-            var newEntry = new DemoDeviceEntry(this, entry);
-            _channels.Add(newEntry);
-            this.Devices.Insert(0, newEntry);
+        //    await Task.Delay(2000);
+        //    var newEntry = new DemoDeviceEntry(this, entry);
+        //    _channels.Add(newEntry);
+        //    this.Devices.Insert(0, newEntry);
 
-            _app.OperationInProgress = false;
-        }
+        //    _app.OperationInProgress = false;
+        //}
 
         internal async void DoBtConnect(BtDeviceEntry btDeviceEntry)
         {
             //TODO
-            //_app.OperationInProgress = true;
-            //ServiceContext.Instance.Player.BtConnector.ConnectBt(btDeviceEntry.Info.Address);
-            //_app.OperationInProgress = false;
+            _app.OperationInProgress = true;
+            ServiceContext.Instance.Player.BtConnector.ConnectBt(btDeviceEntry.Info.Address);
+            _app.OperationInProgress = false;
 
-            this.EmulateConnect(btDeviceEntry);
+            // this.EmulateConnect(btDeviceEntry);
         }
 
         internal async void DoNetConnect(NetDeviceEntry netDeviceEntry)
         {
             //TODO
+            var info = netDeviceEntry.Info;
+            _app.OperationInProgress = true;
+            ServiceContext.Instance.Player.NetConnector.ConnectTo(info.Address, info.Port);
+            _app.OperationInProgress = false;
 
-            //var info = netDeviceEntry.Info;
-            //_app.OperationInProgress = true;
-            //ServiceContext.Instance.Player.NetConnector.ConnectTo(info.Address, info.Port);
-            //_app.OperationInProgress = false;
-
-            this.EmulateConnect(netDeviceEntry);
+            // this.EmulateConnect(netDeviceEntry);
         }
     }
 

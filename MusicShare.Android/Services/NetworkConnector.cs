@@ -289,10 +289,18 @@ namespace MusicShare.Droid.Services
 
         public bool ConnectTo(string host, ushort port)
         {
-            var sck = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-            sck.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, 0);
-            sck.Connect(host, port);
-            return this.NegotiateConnection(sck);
+            try
+            {
+                var sck = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                sck.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, 0);
+                sck.Connect(host, port);
+                return this.NegotiateConnection(sck);
+            }
+            catch (Exception ex)
+            {
+                Log.TraceMethod("Unable to establish network connection: " + ex.ToString());
+                return false;
+            }
         }
     }
 }

@@ -189,6 +189,20 @@ namespace MusicShare.ViewModels.Home
 
         #endregion
 
+        #region double DurationProgress 
+
+        public double DurationProgress
+        {
+            get { return (double)this.GetValue(DurationProgressProperty); }
+            set { this.SetValue(DurationProgressProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for DurationProgress. This enables animation, styling, binding, etc...
+        public static readonly BindableProperty DurationProgressProperty =
+            BindableProperty.Create("DurationProgress", typeof(double), typeof(PlaybackViewModel), default(double));
+
+        #endregion
+
         #region bool ShowSelectors 
 
         public bool ShowSelectors
@@ -278,11 +292,16 @@ namespace MusicShare.ViewModels.Home
                 this.StopCmdAvailable = player.IsPlaying || player.IsPaused;
 
                 if (player.IsStopped)
+                {
                     this.StatusString = "...";
+                    this.DurationProgress = 0;
+                }
             });
             player.OnPositionChanged += () => this.InvokeAction(() => {
                 this.StatusString = player.CurrentPosition.FormatPlaybackTime();
+                this.DurationProgress = player.CurrentPosition.TotalMilliseconds / player.CurrentDuration.TotalMilliseconds;
             });
+            player.Playlist.Enumerate();
         }
 
         private void OnSelectedTrackChanged(TrackInfo oldTrack, TrackInfo newTrack)

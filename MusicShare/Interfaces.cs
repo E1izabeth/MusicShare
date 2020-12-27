@@ -98,6 +98,8 @@ namespace MusicShare
         void Remove(int index);
         void Move(int from, int to);
         void Clear();
+
+        void Enumerate();
     }
 
     public enum PlayerState

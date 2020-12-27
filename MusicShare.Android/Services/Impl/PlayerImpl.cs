@@ -28,7 +28,7 @@ namespace MusicShare.Droid.Services.Impl
         }
     }
 
-    class BtDeviceChannel : DeviceChannel
+    class BtDeviceChannel : DeviceChannel, IBtDeviceChannel
     {
         public BtDeviceEntryInfo Info { get; }
         public BtDeviceConnection BtCnn { get; }
@@ -46,7 +46,7 @@ namespace MusicShare.Droid.Services.Impl
         }
     }
 
-    class LanDeviceChannel : DeviceChannel
+    class LanDeviceChannel : DeviceChannel, INetDeviceChannel
     {
         public NetHostInfo Info { get; }
         public NetDeviceConnection NetCnn { get; }
@@ -74,6 +74,7 @@ namespace MusicShare.Droid.Services.Impl
         public event Action OnPositionChanged;
 
         public event Action<IDeviceChannel> OnConnection;
+        public event Action<int> OnActiveItemChanged;
 
         public PlayerState State { get; private set; }
 
@@ -272,7 +273,7 @@ namespace MusicShare.Droid.Services.Impl
                     this.CurrentPosition = t;
                     
                     var dt = t - prevPosition;
-                    if (dt.TotalSeconds >= 1)
+                    if (dt.TotalSeconds >= 1 && !e)
                     {
                         prevPosition = t;
                         this.OnPositionChanged?.Invoke();
@@ -281,17 +282,14 @@ namespace MusicShare.Droid.Services.Impl
                     _localTarget.Write(f, e);
                     if (e)
                     {
-                        this.Stop();
-                        if (this.Playlist.TryAdvance())
-                        {
-                            this.Start();
-                        }
+                        this.PlayNextTrack();
                     }
                 };
 
                 _localTarget.Start();
                 _fileSource.Start();
                 this.UpdateState(PlayerState.Playing);
+                this.Playlist.TryActivate(this.Playlist.ActiveTrackIndex);
             }
             else if (this.IsPaused)
             {

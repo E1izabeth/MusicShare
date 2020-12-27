@@ -9,6 +9,9 @@ namespace MusicShare
 {
     public partial class App : Application
     {
+        static readonly Lazy<App> _app = new Lazy<App>(() => new App());
+        public static App Instance { get { return _app.Value; } } 
+
         public AppViewModel AppModel { get; }
 
         public App()

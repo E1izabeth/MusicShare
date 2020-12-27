@@ -14,7 +14,7 @@ using System.Text;
 
 namespace MusicShare.Droid.Services.Impl
 {
-   
+
     class PlayerPlaylist : DisposableObject, IPlayerPlaylist
     {
         public event Action OnClear;
@@ -32,6 +32,19 @@ namespace MusicShare.Droid.Services.Impl
         public PlayerPlaylist(Context context)
         {
             _context = context;
+        }
+
+        public void Enumerate()
+        {
+            this.OnClear?.Invoke();
+
+            for (int i = 0; i < _playerTracks.Count; i++)
+            {
+                this.OnInsertItem?.Invoke(i, _playerTracks[i]);
+            }
+
+            if (_playerTracks.Count > 0)
+                this.OnActiveItemChanged?.Invoke(this.ActiveTrackIndex);
         }
 
         public PlayerTrackInfo Get(int index)
