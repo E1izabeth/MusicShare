@@ -1,6 +1,4 @@
-﻿using BruTile.Predefined;
-using BruTile.Web;
-using MusicShare.ViewModels;
+﻿using MusicShare.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -59,6 +59,11 @@ namespace MusicShare.Droid.Services.Impl
             return new AsyncMediaStreamPlayerTarget(streamId, sampleRate, mono);
         }
 
+        public static AsyncMuxedMediaStreamPlayerTarget ToAsyncMuxedMediaStream(int streamId, int sampleRate, bool mono)
+        {
+            return new AsyncMuxedMediaStreamPlayerTarget(streamId, sampleRate, mono);
+        }
+
         public static LocalAudioPayerTarget ToLocalAudio(int sampleRateInHz, bool mono)
         {
             return new LocalAudioPayerTarget(sampleRateInHz, mono);
@@ -383,7 +388,7 @@ namespace MusicShare.Droid.Services.Impl
     //    }
     //}
 
-    class AsyncMediaStreamPlayerTarget : PlayerTarget
+    class AsyncMuxedMediaStreamPlayerTarget : PlayerTarget
     {
         public event Action<StreamDataPacket> OnData;
 
@@ -404,7 +409,7 @@ namespace MusicShare.Droid.Services.Impl
 
         readonly StreamDataHeadPacket _streamHead;
 
-        public AsyncMediaStreamPlayerTarget(int streamId, int sampleRate, bool mono)
+        public AsyncMuxedMediaStreamPlayerTarget(int streamId, int sampleRate, bool mono)
         {
             this.StreamId = streamId;
 
@@ -490,7 +495,7 @@ namespace MusicShare.Droid.Services.Impl
                 _fileStream.Position = pos;
                 if (_fileStream.TryRead(_audioBuffer, 0, step))
                 {
-                    this.OnData(new StreamDataBodyPacket() {
+                    this.OnData?.Invoke(new StreamDataBodyPacket() {
                         DataFrame = new RawData(_audioBuffer, 0, step),
                         StreamId = this.StreamId
                     });
@@ -514,7 +519,7 @@ namespace MusicShare.Droid.Services.Impl
 
         private void FinishData()
         {
-            this.OnData(new StreamDataTailPacket() {
+            this.OnData?.Invoke(new StreamDataTailPacket() {
                 DataFrame = new RawData(new byte[0], 0, 0),
                 StreamId = this.StreamId
             });
@@ -569,11 +574,11 @@ namespace MusicShare.Droid.Services.Impl
 
         class EncoderCallback : MediaCodec.Callback
         {
-            const string _tag = "AsyncMediaStreamPlayerTarget.EncoderCallback";
+            const string _tag = "AsyncMuxedMediaStreamPlayerTarget .EncoderCallback";
 
-            readonly AsyncMediaStreamPlayerTarget _owner;
+            readonly AsyncMuxedMediaStreamPlayerTarget _owner;
 
-            public EncoderCallback(AsyncMediaStreamPlayerTarget owner)
+            public EncoderCallback(AsyncMuxedMediaStreamPlayerTarget owner)
             {
                 _owner = owner;
             }
@@ -581,7 +586,6 @@ namespace MusicShare.Droid.Services.Impl
             public override void OnInputBufferAvailable(MediaCodec codec, int index)
             {
                 Log.TraceMethod("enter");
-                var muxer = _owner._muxer;
 
                 ByteBuffer byteBuffer = codec.GetInputBuffer(index);
                 // Log.i(TAG, "onInputBufferAvailable: byteBuffer b/f readSampleData (decoder): " + byteBuffer);
@@ -644,6 +648,261 @@ namespace MusicShare.Droid.Services.Impl
                 {
                     if (info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream))
                         _owner.DrainMuxedDataEnd();
+                }
+            }
+
+            public override void OnOutputFormatChanged(MediaCodec codec, MediaFormat format)
+            {
+                // should never happen for a typical audio track?? 
+                // Log.i(TAG, "onOutputFormatChanged (decoder): OLD=%s NEW=%s", codec.InputFormat, format);
+                //mEncoder.start();
+            }
+
+            public override void OnError(MediaCodec codec, MediaCodec.CodecException e)
+            {
+                if (!_owner.IsDisposed)
+                {
+                    _owner.RaizeOnErrorEvent(new PlayerException(e));
+                }
+            }
+        }
+    }
+
+    class AsyncMediaStreamPlayerTarget : PlayerTarget
+    {
+        public event Action<StampedStreamDataPacket> OnData;
+
+        private void RaizeOnDataEvent(StampedStreamDataPacket packet) { this.OnData?.Invoke(packet); }
+
+        readonly MediaFormat _mediaFormat;
+        readonly MediaCodec _encoder;
+        readonly int _sampleRate;
+        readonly int _channelsCount;
+
+        public int StreamId { get; private set; }
+
+        readonly StampedStreamDataHeadPacket _streamHead;
+
+        public AsyncMediaStreamPlayerTarget(int streamId, int sampleRate, bool mono)
+        {
+            this.StreamId = streamId;
+
+            _sampleRate = sampleRate;
+            _channelsCount = mono ? 1 : 2;
+
+            _streamHead = new StampedStreamDataHeadPacket() {
+                DataFrame = new RawData(new byte[0], 0, 0),
+                StreamId = streamId,
+                SampleRate = sampleRate,
+                IsMono = mono
+            };
+
+            MediaFormat wantedMediaFormat = MediaFormat.CreateAudioFormat(MediaFormat.MimetypeAudioAac, sampleRate, _channelsCount);
+            wantedMediaFormat.SetInteger(MediaFormat.KeyBitRate, 64 * 1024);
+            wantedMediaFormat.SetInteger(MediaFormat.KeyAacProfile, (int)MediaCodecProfileType.Aacobjecthe);
+
+            var encoder = MediaCodec.CreateEncoderByType(MediaFormat.MimetypeAudioAac);
+            encoder.SetCallback(new EncoderCallback(this));
+            encoder.Configure(wantedMediaFormat, null, null, MediaCodecConfigFlags.Encode);
+
+            _mediaFormat = wantedMediaFormat;
+            _encoder = encoder;
+        }
+
+        protected override void StartImpl()
+        {
+            this.RaizeOnDataEvent(_streamHead);
+            _encoder.Start();
+        }
+
+        readonly object _rawDataLock = new object();
+        readonly ByteQueue _rawData = new ByteQueue();
+        volatile bool _dataNeeded = false;
+        volatile ByteBuffer _buffer;
+        volatile int _bufferIndex;
+
+        protected override void WriteImpl(RawData frame, bool isTail)
+        {
+            if (!this.IsDisposed)
+            {
+                lock (_rawDataLock)
+                {
+                    _rawData.Enqueue(frame.Data, frame.Offset, frame.Size);
+
+                    if (_dataNeeded)
+                    {
+                        if (this.TryConsumeInputData(_buffer, _bufferIndex))
+                        {
+                            _buffer = null;
+                            _bufferIndex = -1;
+                            _dataNeeded = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        byte[] _audioBuffer = null;
+        bool _finalized = false;
+
+        private bool DrainMuxedData(ByteBuffer byteBuffer, MediaCodec.BufferInfo info)
+        {
+            if (byteBuffer != null)
+            {
+                // Log.TraceMethod($"draining {info.Size} bytes");
+
+                if (_audioBuffer == null || _audioBuffer.Length < info.Size)
+                    _audioBuffer = new byte[info.Size];
+
+                Marshal.Copy(byteBuffer.GetDirectBufferAddress() + info.Offset, _audioBuffer, 0, info.Size);
+                
+                var frame = new RawData(_audioBuffer, 0, info.Size);
+                this.RaizeOnDataEvent(new StampedStreamDataBodyPacket() {
+                    DataFrame = frame,
+                    StreamId = this.StreamId,
+                    Stamp = TimeSpan.FromTicks(info.PresentationTimeUs * 10),
+                    Flags = (int)info.Flags
+                });
+
+                // Log.TraceMethod($"drained {info.Size} bytes");
+            }
+
+            if (byteBuffer==null || info.Flags == MediaCodecBufferFlags.EndOfStream)
+            {
+                this.FinishData();
+            }
+
+            return byteBuffer != null && info.Size > 0;
+        }
+
+        private void DrainMuxedDataEnd(ByteBuffer byteBuffer, MediaCodec.BufferInfo info)
+        {
+            if (this.DrainMuxedData(byteBuffer, info))
+                this.FinishData();
+        }
+
+        private void FinishData()
+        {
+            if (!_finalized)
+            {
+                _finalized = true;
+                this.OnData?.Invoke(new StampedStreamDataTailPacket() {
+                    DataFrame = new RawData(new byte[0], 0, 0),
+                    StreamId = this.StreamId,
+                });
+            }
+        }
+
+        protected override void DisposeImpl()
+        {
+            _encoder.SafeDispose();
+        }
+
+        long _currDuration = 0;
+
+        private bool TryConsumeInputData(ByteBuffer byteBuffer, int index)
+        {
+            int size;
+            if (_rawData.Length > 0)
+            {
+                byteBuffer.Rewind();
+                // Log.TraceMethod($"retrieving {byteBuffer.Capacity()} bytes");
+                size = _rawData.DequeueRaw(byteBuffer.GetDirectBufferAddress(), byteBuffer.Capacity());
+
+                // Log.TraceMethod("got data");
+
+                if (size > -1)
+                {
+                    _encoder.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.None);
+                }
+                else
+                {
+                    _encoder.QueueInputBuffer(index, 0, size, _currDuration, MediaCodecBufferFlags.EndOfStream);
+                }
+
+                _currDuration += (size / _channelsCount) * 1000000 / _sampleRate;
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        class EncoderCallback : MediaCodec.Callback
+        {
+            const string _tag = "AsyncMediaStreamPlayerTarget.EncoderCallback";
+
+            readonly AsyncMediaStreamPlayerTarget _owner;
+
+            public EncoderCallback(AsyncMediaStreamPlayerTarget owner)
+            {
+                _owner = owner;
+            }
+
+            public override void OnInputBufferAvailable(MediaCodec codec, int index)
+            {
+                // Log.TraceMethod("enter");
+
+                ByteBuffer byteBuffer = codec.GetInputBuffer(index);
+                // Log.i(TAG, "onInputBufferAvailable: byteBuffer b/f readSampleData (decoder): " + byteBuffer);
+                if (byteBuffer != null)
+                {
+                    try
+                    {
+                        lock (_owner._rawDataLock)
+                        {
+                            if (!_owner.TryConsumeInputData(byteBuffer, index))
+                            {
+                                // Log.TraceMethod($"waiting for {byteBuffer.Capacity()} bytes");
+                                _owner._buffer = byteBuffer;
+                                _owner._bufferIndex = index;
+                                _owner._dataNeeded = true;
+                            }
+                        }
+
+                        // Log.TraceMethod("exit");
+                    }
+                    catch (Exception e)
+                    {
+                        if (!_owner.IsDisposed)
+                        {
+                             Log.e(_tag, "EXCEPTION (decoder)!\nonInputBufferAvailable (decoder): ", e);
+                            throw e;
+                        }
+                    }
+                }
+                else
+                {
+                    Log.e(_tag, "onInputBufferAvailable = null");
+                }
+            }
+
+            public override void OnOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info)
+            {
+                // Log.TraceMethod("enter");
+
+                ByteBuffer byteBuffer = codec.GetOutputBuffer(index);
+                // Log.i(TAG, "onOutputBufferAvailable: byteBuffer with data (decoder): " + byteBuffer);
+
+                var isTail = info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream);
+
+                if (byteBuffer != null)
+                {
+                    // Log.TraceMethod("drain");
+                    if (info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream))
+                        _owner.DrainMuxedDataEnd(byteBuffer, info);
+                    else
+                        _owner.DrainMuxedData(byteBuffer, info);
+
+                    // Log.TraceMethod("release");
+                    codec.ReleaseOutputBuffer(index, false);
+                }
+                else
+                {
+                    if (info.Flags.HasFlag(MediaCodecBufferFlags.EndOfStream))
+                        _owner.DrainMuxedDataEnd(null, info);
                 }
             }
 

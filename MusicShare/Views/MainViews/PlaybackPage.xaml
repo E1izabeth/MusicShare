@@ -81,14 +81,13 @@
                         <Grid Grid.Row="1" Padding="10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="5" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="5" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Grid.Resources>
                                 <Style TargetType="Grid">
-                                    <Style.Triggers>
+                                    <Style.Triggers>    
                                         <DataTrigger Binding="{Binding IsActive}" Value="True" TargetType="Grid">
                                             <Setter Property="Background" Value="LightGreen" />
                                         </DataTrigger>
@@ -96,9 +95,10 @@
                                 </Style>
                             </Grid.Resources>
 
-                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" IsVisible="{Binding Owner.ShowSelectors}" />
-                            <Label Grid.Column="2" Text="{Binding Header}" LineBreakMode="WordWrap" />
-                            <Label Grid.Column="4" Text="{Binding Duration}" LineBreakMode="NoWrap" HorizontalOptions="EndAndExpand" />
+                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" IsVisible="{Binding Owner.ShowSelectors}"
+                                      VerticalOptions="Center" HorizontalOptions="Center" Margin="0" />
+                            <Label Grid.Column="1" Text="{Binding Header}" LineBreakMode="WordWrap" Margin="0" />
+                            <Label Grid.Column="3" Text="{Binding Duration}" LineBreakMode="NoWrap" HorizontalOptions="EndAndExpand" />
                         </Grid>
                     </ViewCell>
                 </DataTemplate>

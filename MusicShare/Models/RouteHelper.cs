@@ -1,5 +1,4 @@
 ﻿using MusicShare.Views.Util;
-using Mapsui.Styles;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -78,19 +77,19 @@ namespace MusicShare.Models
             return results;
         }
 
-        public static MapLocInfo ToLocInfo(this Placemark place, Xamarin.Forms.Color color)
-        {
-            var parts = new[] {
-                place.CountryName,
-                place.Locality,
-                place.SubLocality,
-                place.Thoroughfare,
-                place.SubThoroughfare,
-            };
+        //public static MapLocInfo ToLocInfo(this Placemark place, Xamarin.Forms.Color color)
+        //{
+        //    var parts = new[] {
+        //        place.CountryName,
+        //        place.Locality,
+        //        place.SubLocality,
+        //        place.Thoroughfare,
+        //        place.SubThoroughfare,
+        //    };
 
-            var text = string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
-            return new MapLocInfo(color, text, place.Location.Latitude, place.Location.Longitude);
-        }
+        //    var text = string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+        //    return new MapLocInfo(color, text, place.Location.Latitude, place.Location.Longitude);
+        //}
 
         public static async Task<IEnumerable<Location>> ResolveAddressToLocations(string address)
         {

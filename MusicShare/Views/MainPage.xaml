@@ -9,9 +9,9 @@
             xmlns:vm="clr-namespace:MusicShare.ViewModels"
             xmlns:vmh="clr-namespace:MusicShare.ViewModels.Home"
             x:Class="MusicShare.Views.MainPage"
-            MasterBehavior="Popover" 
+            MasterBehavior="Popover"
             Title="MusicShare" x:Name="root"
-            Visual="Material" >
+            Visual="Material">
     <MasterDetailPage.Master>
         <ContentPage Title="Menu">
             <ScrollView>
@@ -42,14 +42,14 @@
                             </views:ContentPresenter.ItemTemplate>
                         </views:ContentPresenter>
                     </Grid>
-                    <ListView x:Name="ListViewMenu" Grid.Row="1" HasUnevenRows="True" 
-                              ItemsSource="{Binding CurrentStateModel.MenuPages}" 
-                              SelectedItem="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}">
+                    <ListView x:Name="ListViewMenu" Grid.Row="1" HasUnevenRows="True"
+                                ItemsSource="{Binding CurrentStateModel.MenuPages}"
+                                SelectedItem="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <ViewCell>
                                     <Grid Padding="10">
-                                        <Label AutomationId="menuListItem" Text="{Binding Title}" d:Text="{Binding .}" FontSize="20" TextColor="#fff48f"/>
+                                        <Label AutomationId="menuListItem" Text="{Binding Title}" FontSize="20" TextColor="#fff48f"/>
                                     </Grid>
                                 </ViewCell>
                             </DataTemplate>
@@ -69,58 +69,108 @@
     <MasterDetailPage.Detail>
         <NavigationPage>
             <x:Arguments>
-                <ContentPage Title="{Binding CurrentStateModel.CurrentPage.Title}" >
+                <!--<ContentPage Title="{Binding CurrentStateModel.CurrentPage.Title}" >-->
+                <ContentPage Title="{Binding CurrentTitle}" >
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <views:ContentPresenter DataItem="{Binding CurrentStateModel.CurrentPage}" UseDataItem="True">
-                            <views:ContentPresenter.ItemTemplate>
-                                <views:TemplateSelector>
-                                    <views:TemplateCase DataType="{x:Type vmh:LoginViewModel}">
-                                        <DataTemplate>
-                                            <vhome:LoginPage />
-                                        </DataTemplate>
-                                    </views:TemplateCase>
-                                    <views:TemplateCase DataType="{x:Type vmh:RegisterViewModel}">
-                                        <DataTemplate>
-                                            <vhome:RegisterPage />
-                                        </DataTemplate>
-                                    </views:TemplateCase>
-                                    <views:TemplateCase DataType="{x:Type vmh:RestoreViewModel}">
-                                        <DataTemplate>
-                                            <vhome:RestorePage />
-                                        </DataTemplate>
-                                    </views:TemplateCase>
-                                    <views:TemplateCase DataType="{x:Type vm:AboutViewModel}">
-                                        <DataTemplate>
-                                            <views:AboutPage />
-                                        </DataTemplate>
-                                    </views:TemplateCase>
-                                    <views:TemplateCase DataType="{x:Type vmh:LogoutViewModel}">
-                                        <DataTemplate>
-                                            <vhome:LogoutPage />
-                                        </DataTemplate>
-                                    </views:TemplateCase>
-                                    <views:TemplateCase DataType="{x:Type vmh:ProfileViewModel}">
-                                        <DataTemplate>
-                                            <views:ProfilePage />
-                                        </DataTemplate>
-                                    </views:TemplateCase>
-                                    <views:TemplateCase DataType="{x:Type vmh:ConnectivityViewModel}">
-                                        <DataTemplate>
-                                            <views:ConnectivityPage />
-                                        </DataTemplate>
-                                    </views:TemplateCase>
-                                    <views:TemplateCase DataType="{x:Type vmh:PlaybackViewModel}">
-                                        <DataTemplate>
-                                            <views:PlaybackPage />
-                                        </DataTemplate>
-                                    </views:TemplateCase>
-                                </views:TemplateSelector>
-                            </views:ContentPresenter.ItemTemplate>
-                        </views:ContentPresenter>
+
+                        <Grid>
+                            <Grid.Resources>
+                                <DataTemplate x:Key="pageViewTemplate">
+                                    <views:ContentPresenter DataItem="{Binding .}" UseDataItem="True" WidthRequest="{Binding App.DesiredPageWidth}">
+                                        <views:ContentPresenter.ItemTemplate>
+                                            <views:TemplateSelector>
+                                                <!--<views:TemplateCase DataType="{x:Type vmh:LoginViewModel}">
+                                                    <DataTemplate>
+                                                        <vhome:LoginPage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>-->
+                                                <!--<views:TemplateCase DataType="{x:Type vmh:RegisterViewModel}">
+                                                    <DataTemplate>
+                                                        <vhome:RegisterPage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>
+                                                <views:TemplateCase DataType="{x:Type vmh:RestoreViewModel}">
+                                                    <DataTemplate>
+                                                        <vhome:RestorePage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>-->
+                                                <views:TemplateCase DataType="{x:Type vm:AboutViewModel}">
+                                                    <DataTemplate>
+                                                        <views:AboutPage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>
+                                                <!--<views:TemplateCase DataType="{x:Type vmh:LogoutViewModel}">
+                                                    <DataTemplate>
+                                                        <vhome:LogoutPage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>
+                                                <views:TemplateCase DataType="{x:Type vmh:ProfileViewModel}">
+                                                    <DataTemplate>
+                                                        <views:ProfilePage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>-->
+                                                <views:TemplateCase DataType="{x:Type vmh:ConnectivityViewModel}">
+                                                    <DataTemplate>
+                                                        <views:ConnectivityPage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>
+                                                <views:TemplateCase DataType="{x:Type vmh:PlaybackViewModel}">
+                                                    <DataTemplate>
+                                                        <views:PlaybackPage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>
+                                            </views:TemplateSelector>
+                                        </views:ContentPresenter.ItemTemplate>
+                                    </views:ContentPresenter>
+                                </DataTemplate>
+                            </Grid.Resources>
+
+                            <ContentView>
+                                <ContentView.Content>
+                                    <OnPlatform x:TypeArguments="View">
+                                        <On Platform="Android">
+                                            <RefreshView Command="{Binding CurrentStateModel.CurrentPage.RefreshCommand}" 
+                                                         IsEnabled="{Binding CurrentStateModel.CurrentPage.IsRefreshAvailable}" 
+                                                         IsRefreshing="{Binding CurrentStateModel.CurrentPage.IsRefreshing}">
+                                                <!--<CarouselView ItemsSource="{Binding CurrentStateModel.CurrentGroup.SiblingPages}"
+                                              CurrentItem="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}"
+                                              ItemTemplate="{StaticResource pageViewTemplate}"/>-->
+
+                                                <CollectionView ItemsSource="{Binding CurrentStateModel.CurrentGroup.SiblingPages}" SelectionMode="None" 
+                                                views:CollectionViewAutoScroll.SelectedItemToFollow="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}"
+                                                views:CollectionViewAutoScroll.VisibleItems="{Binding CurrentVisiblePages,Mode=TwoWay}" SizeChanged="OnSizeChanged"
+                                                ItemTemplate="{StaticResource pageViewTemplate}">
+                                                    <CollectionView.ItemsLayout>
+                                                        <LinearItemsLayout Orientation="Horizontal" SnapPointsType="MandatorySingle" SnapPointsAlignment="Start" />
+                                                    </CollectionView.ItemsLayout>
+                                                </CollectionView>
+                                            </RefreshView>
+                                        </On>
+                                        <On Platform="UWP">
+                                            <CollectionView ItemsSource="{Binding CurrentStateModel.CurrentGroup.SiblingPages}" SelectionMode="None" 
+                                                            views:CollectionViewAutoScroll.SelectedItemToFollow="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}"
+                                                            views:CollectionViewAutoScroll.VisibleItems="{Binding CurrentVisiblePages,Mode=TwoWay}" SizeChanged="OnSizeChanged"
+                                                            ItemTemplate="{StaticResource pageViewTemplate}">
+                                                <CollectionView.ItemsLayout>
+                                                    <LinearItemsLayout Orientation="Horizontal" SnapPointsType="MandatorySingle" SnapPointsAlignment="Start" />
+                                                </CollectionView.ItemsLayout>
+                                            </CollectionView>
+                                        </On>
+                                        <!--<On Platform="iOS">
+                                            <ScrollView>
+                                                <Button Text="iOS"></Button>
+                                            </ScrollView>
+                                        </On>-->
+                                    </OnPlatform>
+                                </ContentView.Content>
+                            </ContentView>
+
+                        </Grid>
+
                         <Frame Grid.Row="0" IsVisible="{Binding OperationInProgress}" BackgroundColor="LightGray" Opacity="0.25">
                             <ActivityIndicator IsRunning="{Binding OperationInProgress}" Opacity="1" />
                         </Frame>
@@ -156,10 +206,8 @@
                                                     </Grid.ColumnDefinitions>
 
                                                     <Label Grid.Column="0" Text="{Binding Stamp}" TextColor="DarkRed" VerticalOptions="Center" />
-                                                    <Label Grid.Column="1" Text="{Binding Text}" TextColor="DarkRed" VerticalOptions="Center" HorizontalOptions="Start" 
-                                                           AutomationId="lblPopupText"/>
-                                                    <Button Grid.Column="2" Text="x" Padding="0" Command="{Binding CloseCommand}"
-                                                            AutomationId="btnPopupClose"/>
+                                                    <Label Grid.Column="1" Text="{Binding Text}" TextColor="DarkRed" VerticalOptions="Center" HorizontalOptions="Start" AutomationId="lblPopupText"/>
+                                                    <Button Grid.Column="2" Text="x" Padding="0" Command="{Binding CloseCommand}" AutomationId="btnPopupClose"/>
                                                 </Grid>
                                             </Frame>
                                         </DataTemplate>

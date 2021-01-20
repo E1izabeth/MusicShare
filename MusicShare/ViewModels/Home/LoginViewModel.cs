@@ -14,10 +14,10 @@ namespace MusicShare.ViewModels.Home
 
         public ICommand LoginCommand { get; }
 
-        public LoginViewModel(AppViewModel app)
-            : base("Login")
+        public LoginViewModel(AppStateGroupViewModel group)
+            : base("Login", group)
         {
-            this.LoginCommand = new Command(async () => app.Login(this.Login, this.Password));
+            this.LoginCommand = new Command(async () => this.App.Login(this.Login, this.Password));
         }
     }
 
@@ -30,10 +30,10 @@ namespace MusicShare.ViewModels.Home
 
         public ICommand RegisterCommand { get; }
 
-        public RegisterViewModel(AppViewModel app)
-            : base("Register")
+        public RegisterViewModel(AppStateGroupViewModel group)
+            : base("Register", group)
         {
-            this.RegisterCommand = new Command(async () => app.Register(this.Login, this.Email, this.Password, this.Password2));
+            this.RegisterCommand = new Command(async () => this.App.Register(this.Login, this.Email, this.Password, this.Password2));
         }
     }
 
@@ -59,13 +59,13 @@ namespace MusicShare.ViewModels.Home
 
         public ICommand RestoreCommand { get; }
 
-        public RestoreViewModel(AppViewModel app)
-            : base("Restore")
+        public RestoreViewModel(AppStateGroupViewModel group)
+            : base("Restore", group)
         {
             this.ActionButtonEnabled = true;
             this.RestoreCommand = new Command(async () =>
             {
-                var successed = await app.Restore(this.Login, this.Email, this.Email2);
+                var successed = await this.App.Restore(this.Login, this.Email, this.Email2);
                 this.ActionButtonEnabled = !successed;
             });
         }
@@ -75,10 +75,10 @@ namespace MusicShare.ViewModels.Home
     {
         public ICommand LogoutCommand { get; }
 
-        public LogoutViewModel(AppViewModel app)
-            : base("Logout")
+        public LogoutViewModel(AppStateGroupViewModel group)
+            : base("Logout", group)
         {
-            this.LogoutCommand = new Command(async () => { app.Logout();  }) ;
+            this.LogoutCommand = new Command(async () => { this.App.Logout();  }) ;
         }
     }
 }

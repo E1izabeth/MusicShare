@@ -1,5 +1,4 @@
-﻿using BruTile.Wmts.Generated;
-using MusicShare.Interaction;
+﻿using MusicShare.Interaction;
 using MusicShare.Interaction.Standard;
 using Newtonsoft.Json;
 using System;

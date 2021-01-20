@@ -1,4 +1,8 @@
-﻿using Android.App;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Android.App;
 using Android.Content;
 using Android.Media;
 using Android.Net;
@@ -8,16 +12,12 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using MusicShare.Droid.Services.Impl;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MusicShare.Droid.Services
 {
 
     [Service(Name = PlayerService.Name)]
-    [IntentFilter(new[] { ActionTerminate })]
+    // [IntentFilter(new[] { ActionTerminate })]
     public class PlayerService : IntentService, AudioManager.IOnAudioFocusChangeListener, IPlayerService
     {
         private static object _instanceLock = new object();
@@ -50,9 +50,9 @@ namespace MusicShare.Droid.Services
             action(Instance);
         }
 
-        class PlayerServiceIntentReceiver : BroadcastReceiver
+        private class PlayerServiceIntentReceiver : BroadcastReceiver
         {
-            readonly PlayerService _owner;
+            private readonly PlayerService _owner;
 
             public PlayerServiceIntentReceiver(PlayerService owner)
             {
@@ -63,6 +63,15 @@ namespace MusicShare.Droid.Services
             {
                 switch (intent.Action)
                 {
+                    case ActionTerminate:
+                        {
+                            var activity = (Activity)Xamarin.Forms.Forms.Context;
+                            activity.FinishAffinity();
+
+                            var serviceIntent = new Intent(context, typeof(PlayerService));
+                            _owner.StopService(serviceIntent);
+                        }
+                        break;
                     case AudioManager.ActionAudioBecomingNoisy:
                         {
                             _owner._player.SetVolume(0.1f);
@@ -77,6 +86,8 @@ namespace MusicShare.Droid.Services
         public const string ActionTerminate = "com.companyname.MusicShare.Droid.Services.PlayerService.Terminate";
 
         public const string Name = "com.companyname.MusicShare.Droid.Services.PlayerService";
+        public static readonly Guid Id = Guid.Parse("B2C68981-2ACD-4622-950E-FAF0E10ADE11");
+
         private const int _notificationId = 1;
 
         private PlayerServiceIntentReceiver _intentReceiver;
@@ -227,27 +238,31 @@ namespace MusicShare.Droid.Services
                 this.ApplicationContext, 0, new Intent(this.ApplicationContext, typeof(MainActivity)), PendingIntentFlags.UpdateCurrent
             );
 
-            var channelId = Build.VERSION.SdkInt >= BuildVersionCodes.O ? this.CreateNotificationChannel(Name, "MusicShare Player Service") : string.Empty;
+            Notification notification;
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+            {
+                var channelId = this.CreateNotificationChannel(Name, "MusicShare Player Service");
+                notification = new Notification.Builder(this, channelId)
+                    .SetContentTitle("MusicShare")
+                    .SetContentText(contentText)
+                    .SetSmallIcon(Resource.Mipmap.ic_launcher)
+                    .SetContentIntent(pendingIntent)
+                    .SetCategory(Notification.CategoryService)
+                    .SetOngoing(true)
+                    .SetBadgeIconType(NotificationBadgeIconType.Small)
+                    // .AddAction(BuildRestartTimerAction())
+                    // .AddAction(BuildStopServiceAction())
+                    .Build();
+            }
+            else
+            {
+                notification = new Notification(Resource.Mipmap.ic_launcher, "MusicShare") {
+                    ContentIntent = pendingIntent,
+                };
+                notification.Flags |= NotificationFlags.OngoingEvent;
+                notification.SetLatestEventInfo(this.ApplicationContext, "Xamarin Streaming", "Playing music!", pendingIntent);
+            }
 
-            //var notification = new Notification {
-            //    TickerText = new Java.Lang.String("Song started!"),
-            //    Icon = Resource.Drawable.logo
-            //};
-            //notification.Flags |= NotificationFlags.OngoingEvent;
-            //notification.SetLatestEventInfo(ApplicationContext, "Xamarin Streaming", "Playing music!", pendingIntent);
-
-            var notification = new Notification.Builder(this, channelId)
-                .SetContentTitle("MusicShare")
-                .SetContentText(contentText)
-                .SetSmallIcon(Resource.Mipmap.ic_launcher)
-                .SetContentIntent(pendingIntent)
-                .SetCategory(Notification.CategoryService)
-                .SetOngoing(true)
-                .SetBadgeIconType(NotificationBadgeIconType.Small)
-                // .AddAction(BuildRestartTimerAction())
-                // .AddAction(BuildStopServiceAction())
-                .Build();
-            
             return notification;
         }
 

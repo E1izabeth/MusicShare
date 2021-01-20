@@ -6,6 +6,7 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using MusicShare.Interaction.Standard.Common;
+using MusicShare.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,12 +22,14 @@ namespace MusicShare.Droid.Services.Impl
         public event Action<int> OnRemoveItem;
         public event Action<int, PlayerTrackInfo> OnInsertItem;
         public event Action<int> OnActiveItemChanged;
+        public event Action<int, PlayerTrackInfo> OnUpdateItem;
 
         readonly Context _context;
 
         readonly List<PlayerTrackInfo> _playerTracks = new List<PlayerTrackInfo>();
 
         public int ActiveTrackIndex { get; private set; }
+        public int TracksCount { get { return _playerTracks.Count; } }
         public bool IsEmpty { get { return _playerTracks.Count == 0; } }
 
         public PlayerPlaylist(Context context)
@@ -50,6 +53,14 @@ namespace MusicShare.Droid.Services.Impl
         public PlayerTrackInfo Get(int index)
         {
             return _playerTracks[index];
+        }
+
+        public void Add(IDeviceChannel chan)
+        {
+            var trackInfo = new PlayerTrackInfo(chan);
+            var index = _playerTracks.Count;
+            _playerTracks.Add(trackInfo);
+            this.OnInsertItem?.Invoke(index, trackInfo);
         }
 
         public void Add(string filepath)
@@ -185,7 +196,7 @@ namespace MusicShare.Droid.Services.Impl
             var trackNumber = !string.IsNullOrEmpty(trackNumberStr) && int.TryParse(trackNumberStr, out var trackNumberResult) ? trackNumberResult : default(int?);
 
             var durationStr = metadataRetriever.ExtractMetadata(MetadataKey.Duration);
-            var duration = !string.IsNullOrEmpty(durationStr) && int.TryParse(durationStr, out var durationResult) ? TimeSpan.FromMilliseconds(durationResult) : default;
+            var duration = !string.IsNullOrEmpty(durationStr) && int.TryParse(durationStr, out var durationResult) ? TimeSpan.FromMilliseconds(durationResult) : default(TimeSpan?);
 
             var title = metadataRetriever.ExtractMetadata(MetadataKey.Title);
 
@@ -197,5 +208,6 @@ namespace MusicShare.Droid.Services.Impl
         protected override void DisposeImpl()
         {
         }
+
     }
 }

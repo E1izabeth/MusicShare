@@ -1,4 +1,10 @@
-﻿using Android.App;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using Android.App;
 using Android.Bluetooth;
 using Android.Content;
 using Android.Media;
@@ -7,69 +13,34 @@ using Android.OS;
 using Android.Runtime;
 using Android.Views;
 using Android.Widget;
+using Java.Lang.Reflect;
 using Java.Net;
+using MusicShare.Droid.Services.Bluetooth;
 using MusicShare.Interaction.Standard.Common;
 using MusicShare.Interaction.Standard.Stream;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
+using MusicShare.Services;
+using MusicShare.Services.Bluetooth;
+using MusicShare.Services.NetworkChannels;
+using MusicShare.Services.Streams;
+using Class = Java.Lang.Class;
 
 namespace MusicShare.Droid.Services.Impl
 {
-    abstract class DeviceChannel : DisposableObject, IDeviceChannel
+    internal class PlayerImpl : DisposableObject, IPlayer
     {
-        public System.IO.Stream Stream { get; protected set; }
-
-        public DeviceChannel()
+        private class ChanHolder
         {
-        }
-    }
+            public LinkedListNode<ChanHolder> ConnectionsListNode { get; set; }
+            public LinkedListNode<ChanHolder> ListenersListNode { get; set; }
 
-    class BtDeviceChannel : DeviceChannel, IBtDeviceChannel
-    {
-        public BtDeviceEntryInfo Info { get; }
-        public BtDeviceConnection BtCnn { get; }
+            public IDeviceChannel Channel { get; }
 
-        public BtDeviceChannel(BtDeviceConnection btCnn)
-        {
-            this.BtCnn = btCnn;
-            this.Info = new BtDeviceEntryInfo(btCnn.Socket.RemoteDevice.Address, btCnn.Socket.RemoteDevice.Name);
-            this.Stream = btCnn.Stream;
+            public ChanHolder(IDeviceChannel channel)
+            {
+                this.Channel = channel;
+            }
         }
 
-        protected override void DisposeImpl()
-        {
-            this.BtCnn.SafeDispose();
-        }
-    }
-
-    class LanDeviceChannel : DeviceChannel, INetDeviceChannel
-    {
-        public NetHostInfo Info { get; }
-        public NetDeviceConnection NetCnn { get; }
-
-        public LanDeviceChannel(NetDeviceConnection netCnn)
-        {
-            this.NetCnn = netCnn;
-            this.Info = netCnn.Info;
-            this.Stream = netCnn.Stream;
-        }
-
-        protected override void DisposeImpl()
-        {
-            this.NetCnn.Stream.SafeDispose();
-        }
-    }
-
-    //class WanDeviceConnection : DeviceConnection
-    //{
-    //}
-
-    class PlayerImpl : DisposableObject, IPlayer
-    {
         public event Action OnStateChanged;
         public event Action OnPositionChanged;
 
@@ -86,32 +57,30 @@ namespace MusicShare.Droid.Services.Impl
 
         // public event Action<StreamDataPacket> OnAudioData;
 
-        readonly Service _service;
+        private readonly Service _service;
+        private readonly StreamNegotiator _negotiator;
 
-        public BluetoothConnector BtConnector { get; }
-        public NetworkConnector NetConnector { get; }
+        public IBluetoothConnector BtConnector { get; }
+        public INetworkConnector NetConnector { get; }
         public PlayerPlaylist Playlist { get; }
 
-        IBluetoothConnector IPlayer.BtConnector { get { return this.BtConnector; } }
-        INetworkConnector IPlayer.NetConnector { get { return this.NetConnector; } }
         IPlayerPlaylist IPlayer.Playlist { get { return this.Playlist; } }
 
-        LocalAudioPayerTarget _localTarget;
-        AsyncMediaStreamPlayerTarget _streamTarget;
-
-        MediaFilePayerSource _fileSource;
-        AsyncMediaStreamPlayerSource _streamSource;
-
-        readonly WorkerThreadPool _threadPool = new WorkerThreadPool(3);
+        private MediaFilePayerSource _fileSource;
+        private LocalAudioPayerTarget _localTarget;
+        private volatile AsyncMediaStreamPlayerSource _streamSource;
+        private volatile AsyncMediaStreamPlayerTarget _streamTarget;
+        private readonly WorkerThreadPool _threadPool = new WorkerThreadPool(3);
 
         public string LocalDeviceName { get; private set; }
 
-        ConnectivityManager _connectivityManager;
+        private readonly ConnectivityManager _connectivityManager;
+        private const ushort LocalPort = 32332;
+        private readonly object _connectionsLock = new object();
+        private readonly LinkedList<ChanHolder> _connections = new LinkedList<ChanHolder>();
 
-        const ushort LocalPort = 32332;
-
-        readonly object _connectionsLock = new object();
-        readonly List<DeviceChannel> _connections = new List<DeviceChannel>();
+        private readonly object _activeListenersLock = new object();
+        private readonly LinkedList<ChanHolder> _activeListeners = new LinkedList<ChanHolder>();
 
         public PlayerImpl(Service service)
         {
@@ -122,34 +91,132 @@ namespace MusicShare.Droid.Services.Impl
 
             this.Playlist = new PlayerPlaylist(service.ApplicationContext);
 
-            this.LocalDeviceName = Android.Provider.Settings.Secure.GetString(service.ContentResolver, "bluetooth_name");
+            this.LocalDeviceName = this.ObtainLocalDeviceName();
 
-            this.BtConnector = new BluetoothConnector(service);
-            this.NetConnector = new NetworkConnector(service, LocalPort, this.LocalDeviceName);
+            _negotiator = new StreamNegotiator();
+            var netConnector = new NetworkConnectorService(_negotiator, PlayerService.Id, LocalPort, this.LocalDeviceName);
+            var btConnector = BluetoothAdapter.DefaultAdapter != null ? new BluetoothConnectorService(_negotiator, PlayerService.Id, this.LocalDeviceName, service)
+                                                                      : (IBluetoothConnectorImpl)new NullBluetoothConnectorService();
+            this.NetConnector = netConnector;
+            this.BtConnector = btConnector;
 
-            this.BtConnector.OnNewConnection += btCnn => {
-                var chan = new BtDeviceChannel(btCnn);
+            this.BtConnector.OnConnection += chan => this.RegisterConnection(chan);
+            this.NetConnector.OnConnection += chan => this.RegisterConnection(chan);
 
-                lock (_connectionsLock)
-                {
-                    _connections.Add(chan);
-                }
-
-                this.OnConnection?.Invoke(chan);
-            };
-            this.NetConnector.OnNewConnection += netCnn => {
-                var chan = new LanDeviceChannel(netCnn);
-
-                lock (_connectionsLock)
-                {
-                    _connections.Add(chan);
-                }
-
-                this.OnConnection?.Invoke(chan);
-            };
+            netConnector.Start();
+            btConnector.Start();
+            _negotiator.Start();
         }
 
-        readonly HashSet<string> _authTokens = new HashSet<string>();
+        private void RegisterConnection(IDeviceChannel chan)
+        {
+            var holder = new ChanHolder(chan);
+
+            lock (_connectionsLock)
+            {
+                holder.ConnectionsListNode = _connections.AddLast(holder);
+            }
+
+            chan.OnEnabled += () => {
+                if (holder.ListenersListNode == null)
+                {
+                    lock (_connectionsLock)
+                    {
+                        lock (_activeListenersLock)
+                        {
+                            holder.ListenersListNode = _activeListeners.AddLast(holder);
+
+                            if (_streamTarget == null)
+                            {
+                                _streamTarget = new AsyncMediaStreamPlayerTarget(0, 44100, false);
+                                _streamTarget.OnData += pckt => {
+                                    lock (_activeListenersLock)
+                                    {
+                                        foreach (var item in _activeListeners)
+                                        {
+                                            item.Channel.SendData(pckt);
+                                        }
+                                    }
+                                };
+                                _streamTarget.Start();
+                            }
+                        }
+                    }
+                }
+            };
+            chan.OnDisabled += () => {
+                if (holder.ListenersListNode != null)
+                {
+                    lock (_connectionsLock)
+                    {
+                        lock (_activeListenersLock)
+                        {
+                            _activeListeners.Remove(holder.ListenersListNode);
+
+                            if (_activeListeners.Count == 0)
+                            {
+                                _streamTarget.SafeDispose();
+                                _streamTarget = null;
+                            }
+                        }
+                    }
+                }
+            };
+            chan.OnClosed += () => {
+                lock (_connectionsLock)
+                {
+                    if (holder.ListenersListNode != null)
+                    {
+                        lock (_activeListenersLock)
+                        {
+                            if (holder.ListenersListNode != null)
+                            {
+                                _activeListeners.Remove(holder.ListenersListNode);
+                            }
+                        }
+                    }
+
+                    _connections.Remove(holder.ConnectionsListNode);
+                    holder.ConnectionsListNode = null;
+                }
+            };
+
+            this.OnConnection?.Invoke(chan);
+
+            this.Playlist.Add(chan);
+
+            chan.Start();
+        }
+
+        private String ObtainLocalDeviceName()
+        {
+            var envMachineName = System.Environment.MachineName;
+            if (BluetoothAdapter.DefaultAdapter != null)
+                return Android.Provider.Settings.Secure.GetString(_service.ContentResolver, "bluetooth_name");
+
+            try
+            {
+                var javaString = new Java.Lang.String();
+                var systemPropertiesClass = Class.ForName("android.os.SystemProperties");
+                var getter = systemPropertiesClass.GetMethod("get", javaString.Class);
+
+                var obj = getter.Invoke(javaString, "ro.product.device");
+                if (obj != null)
+                {
+                    var str = obj.ToString();
+                    if (!string.IsNullOrWhiteSpace(str))
+                        return str;
+                }
+            }
+            catch (Exception e)
+            {
+            }
+
+            return envMachineName;
+        }
+
+
+        private readonly HashSet<string> _authTokens = new HashSet<string>();
 
         public ConnectivityInfoType GetConnectivityInfo()
         {
@@ -196,7 +263,7 @@ namespace MusicShare.Droid.Services.Impl
 
             try
             {
-                info.BluetoothAddress = BluetoothAdapter.DefaultAdapter.Address;
+                info.BluetoothAddress = BluetoothAdapter.DefaultAdapter?.Address ?? null;
             }
             catch (Exception ex)
             {
@@ -206,32 +273,20 @@ namespace MusicShare.Droid.Services.Impl
             return info;
         }
 
-        Thread _connectThread;
-
-        public void Connect(ConnectivityInfoType target, Action callback)
+        public void Connect(ConnectivityInfoType target, Action<bool> callback)
         {
-            _connectThread = new Thread(() => {
-                bool TryIpEps(IpEndPointInfo[] eps)
-                {
-                    foreach (var ep in eps ?? new IpEndPointInfo[0])
-                        if (this.NetConnector.ConnectTo(ep.Address, (ushort)ep.Port))
-                            return true;
-                    return false;
-                }
+            IEnumerator<IpEndPointInfo> ips = (target.IpV4EndPoints ?? new IpEndPointInfo[0]).Concat(target.IpV6EndPoints ?? new IpEndPointInfo[0]).GetEnumerator();
 
-                var ok = TryIpEps(target.IpV4EndPoints);
-                if (!ok)
-                    ok = TryIpEps(target.IpV6EndPoints);
+            void onNetOk(NetDeviceChannel cnn) { callback(true); }
+            void tryNextNet(Exception ex)
+            {
+                if (ips.MoveNext())
+                    this.NetConnector.Connect(ips.Current.Address, (ushort)ips.Current.Port, onNetOk, tryNextNet);
+                else
+                    this.BtConnector.Connect(target.BluetoothAddress, cnn => callback(true), ex2 => callback(false));
+            }
 
-                if (!ok && !String.IsNullOrWhiteSpace(target.BluetoothAddress))
-                    ok = this.BtConnector.ConnectBt(target.BluetoothAddress);
-
-                // TODO connect over online service
-                callback();
-            }) {
-                IsBackground = true
-            };
-            _connectThread.Start();
+            tryNextNet(null);
         }
 
         private void UpdateState(PlayerState newState)
@@ -245,11 +300,17 @@ namespace MusicShare.Droid.Services.Impl
 
         private void Cleanup()
         {
+            if (_streamSource != null)
+                _streamSource.SafeDispose();
             if (_fileSource != null)
                 _fileSource.SafeDispose();
             if (_localTarget != null)
                 _localTarget.SafeDispose();
+            //if (_streamTarget != null)
+            //    _streamTarget.SafeDispose();
         }
+
+        private IPlayerTarget _target; // TODO: SEEMS IT WORKS
 
         public void Start()
         {
@@ -260,36 +321,122 @@ namespace MusicShare.Droid.Services.Impl
             {
                 this.Cleanup();
 
-                var trackInfo = this.Playlist.Get(this.Playlist.ActiveTrackIndex);
-                _fileSource = PlayerSource.FromPathOrUri(_service.ApplicationContext.ContentResolver, trackInfo.FilePathOrUri);
-                _localTarget = PlayerTarget.ToLocalAudio(_fileSource.SampleRateHz, _fileSource.IsMono);
-                
-                var prevPosition = TimeSpan.Zero;
-                this.CurrentDuration = trackInfo.Duration;
-                this.CurrentPosition = TimeSpan.Zero;
-                this.OnPositionChanged?.Invoke();
+                var trackIndex = this.Playlist.ActiveTrackIndex;
+                if (trackIndex < 0 || trackIndex >= this.Playlist.TracksCount)
+                    if (!this.Playlist.TryActivate(trackIndex = 0))
+                        return;
 
-                _fileSource.OnRawData += (f, t, e) => {
-                    this.CurrentPosition = t;
-                    
-                    var dt = t - prevPosition;
-                    if (dt.TotalSeconds >= 1 && !e)
-                    {
-                        prevPosition = t;
-                        this.OnPositionChanged?.Invoke();
-                    }
+                var trackInfo = this.Playlist.Get(trackIndex);
 
-                    _localTarget.Write(f, e);
-                    if (e)
-                    {
-                        this.PlayNextTrack();
-                    }
-                };
+                this.Playlist.TryActivate(trackIndex);
 
-                _localTarget.Start();
-                _fileSource.Start();
+                if (trackInfo.Channel != null)
+                {
+                    var start = DateTime.Now;
+                    var prevPosition = TimeSpan.Zero;
+
+                    var chan = trackInfo.Channel;
+                    chan.StartListening();
+                    chan.OnStreamData += pckt => {
+                        if (pckt is StampedStreamDataHeadPacket head)
+                        {
+                            if (_streamSource != null)
+                                _streamSource.SafeDispose();
+                            if (_localTarget != null)
+                                _localTarget.SafeDispose();
+
+                            start = DateTime.Now;
+                            _streamSource = PlayerSource.FromMediaStream(head);
+                            _localTarget = PlayerTarget.ToLocalAudio(head.SampleRate, head.IsMono);
+
+                            _streamSource.OnRawData += (f, t, e) => {
+                                this.CurrentPosition = t;
+
+                                var dt = t - prevPosition;
+                                if (dt.TotalSeconds >= 1 && !e)
+                                {
+                                    prevPosition = t;
+                                    this.OnPositionChanged?.Invoke();
+                                }
+
+                                _localTarget.Write(f, e);
+
+                                if (_streamTarget != null)
+                                    _streamTarget.Write(f, e);
+
+                                // _target.Write(f, e);
+                                if (e)
+                                {
+                                    this.PlayNextTrack();
+                                }
+
+                            };
+
+                            _localTarget.Start();
+                            _streamSource.Start();
+                        }
+                        else if (_streamSource != null)
+                        {
+                            _streamSource.PushStreamData(pckt);
+                        }
+
+                        if (!(pckt is StampedStreamDataTailPacket))
+                        {
+                            this.CurrentPosition = pckt.Stamp;
+                            this.CurrentDuration = DateTime.Now - start;
+
+                            var dt = pckt.Stamp - prevPosition;
+                            if (dt.TotalSeconds >= 1)
+                            {
+                                prevPosition = pckt.Stamp;
+                                this.OnPositionChanged?.Invoke();
+                            }
+                        }
+                    };
+                    chan.OnClosed += () => {
+                        this.Stop();
+                    };
+                }
+                else
+                {
+                    _fileSource = PlayerSource.FromPathOrUri(_service.ApplicationContext.ContentResolver, trackInfo.FilePathOrUri);
+                    _localTarget = PlayerTarget.ToLocalAudio(_fileSource.SampleRateHz, _fileSource.IsMono);
+
+                    // _target = PlayerTarget.ToAsyncMediaStream(0, _fileSource.SampleRateHz, _fileSource.IsMono);
+
+                    var prevPosition = TimeSpan.Zero;
+                    this.CurrentDuration = trackInfo.Duration ?? TimeSpan.MaxValue;
+                    this.CurrentPosition = TimeSpan.Zero;
+                    this.OnPositionChanged?.Invoke();
+
+                    _fileSource.OnRawData += (f, t, e) => {
+                        this.CurrentPosition = t;
+
+                        var dt = t - prevPosition;
+                        if (dt.TotalSeconds >= 1 && !e)
+                        {
+                            prevPosition = t;
+                            this.OnPositionChanged?.Invoke();
+                        }
+
+                        _localTarget.Write(f, e);
+
+                        if (_streamTarget != null)
+                            _streamTarget.Write(f, e);
+
+                        // _target.Write(f, e);
+                        if (e)
+                        {
+                            this.PlayNextTrack();
+                        }
+                    };
+
+                    _localTarget.Start();
+                    // _target.Start();
+                    _fileSource.Start();
+                }
+
                 this.UpdateState(PlayerState.Playing);
-                this.Playlist.TryActivate(this.Playlist.ActiveTrackIndex);
             }
             else if (this.IsPaused)
             {
@@ -300,10 +447,16 @@ namespace MusicShare.Droid.Services.Impl
 
         public void Pause()
         {
-            if (this.IsPlaying && _fileSource != null)
+            if (this.IsPlaying)
             {
-                _fileSource.Pause();
-                this.UpdateState(PlayerState.Paused);
+                if (_fileSource != null)
+                {
+                    _fileSource.Pause();
+                    this.UpdateState(PlayerState.Paused);
+                }
+
+                if (_streamSource != null)
+                    this.Stop();
             }
         }
 
@@ -388,43 +541,43 @@ namespace MusicShare.Droid.Services.Impl
                 this.Start();
         }
 
-        public void Test2()
-        {
+        //public void Test2()
+        //{
 
-            var filePathOrUri = this.Playlist.Get(this.Playlist.ActiveTrackIndex).FilePathOrUri;
-            byte[] buff;
-            if (File.Exists(filePathOrUri))
-            {
-                var stream = File.Open(filePathOrUri, FileMode.Open);
-                buff = new byte[stream.Length];
-                stream.Read(buff, 0, buff.Length);
-            }
-            else
-            {
-                var uri = Android.Net.Uri.Parse(filePathOrUri);
-                var stream = _service.ApplicationContext.ContentResolver.OpenInputStream(uri);
-                buff = new byte[stream.Length];
-                stream.Read(buff, 0, buff.Length);
-            }
+        //    var filePathOrUri = this.Playlist.Get(this.Playlist.ActiveTrackIndex).FilePathOrUri;
+        //    byte[] buff;
+        //    if (File.Exists(filePathOrUri))
+        //    {
+        //        var stream = File.Open(filePathOrUri, FileMode.Open);
+        //        buff = new byte[stream.Length];
+        //        stream.Read(buff, 0, buff.Length);
+        //    }
+        //    else
+        //    {
+        //        var uri = Android.Net.Uri.Parse(filePathOrUri);
+        //        var stream = _service.ApplicationContext.ContentResolver.OpenInputStream(uri);
+        //        buff = new byte[stream.Length];
+        //        stream.Read(buff, 0, buff.Length);
+        //    }
 
-            _streamSource = new AsyncMediaStreamPlayerSource(new StreamDataHeadPacket() {
-                StreamId = 0,
-                TotalSize = buff.Length,
-                DataFrame = new RawData(buff, 0, buff.Length)
-            });
-            _localTarget = PlayerTarget.ToLocalAudio(_fileSource.SampleRateHz, _fileSource.IsMono);
+        //    _streamSource = new AsyncMediaStreamPlayerSource(new StampedStreamDataHeadPacket() {
+        //        StreamId = 0,
+        //        TotalSize = buff.Length,
+        //        DataFrame = new RawData(buff, 0, buff.Length)
+        //    });
+        //    _localTarget = PlayerTarget.ToLocalAudio(_fileSource.SampleRateHz, _fileSource.IsMono);
 
-            _streamSource.OnRawData += (f, s, t) => {
-                _localTarget.Write(f, t);
-                if (t)
-                {
-                    _streamSource.SafeDispose();
-                }
-            };
+        //    _streamSource.OnRawData += (f, s, t) => {
+        //        _localTarget.Write(f, t);
+        //        if (t)
+        //        {
+        //            _streamSource.SafeDispose();
+        //        }
+        //    };
 
-            _localTarget.Start();
-            _fileSource.Start();
-        }
+        //    _localTarget.Start();
+        //    _fileSource.Start();
+        //}
 
         protected override void DisposeImpl()
         {

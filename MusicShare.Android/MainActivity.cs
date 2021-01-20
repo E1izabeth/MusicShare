@@ -21,7 +21,7 @@ using MusicShare.Droid.Services;
 namespace MusicShare.Droid
 {
     [Activity(Label = "MusicShare", Icon = "@mipmap/icon", Theme = "@style/MainTheme", /*MainLauncher = true,*/
-              Name = "MusicShare.Droid.MainActivity", ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation)]
+              Name = "musicshare.droid.MainActivity", ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation)]
     [IntentFilter(new[] { Intent.ActionView }, Categories = new[] { Intent.CategoryDefault, Intent.CategoryBrowsable }, DataScheme = "http", DataHost = "172.16.100.47")]
     public class MainActivity : global::Xamarin.Forms.Platform.Android.FormsAppCompatActivity, IActivity
     {
@@ -31,6 +31,11 @@ namespace MusicShare.Droid
         public IPlayer Player { get; private set; }
 
         public PlayerServiceConnection UnderlyingServiceConnection { get; private set; }
+
+        public MainActivity()
+        {
+            
+        }
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -78,6 +83,7 @@ namespace MusicShare.Droid
 
         void IActivity.Terminate()
         {
+            this.Finish();
             this.FinishAffinity();
         }
 

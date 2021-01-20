@@ -1,14 +1,14 @@
-﻿using BruTile.Tms;
-using MusicShare.Models;
-using MusicShare.ViewModels.Home;
-using MusicShare.Views;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using MusicShare.Models;
+using MusicShare.ViewModels.Home;
+using MusicShare.Views;
 using Xamarin.Essentials;
 using Xamarin.Forms;
 
@@ -16,24 +16,122 @@ namespace MusicShare.ViewModels
 {
     public abstract class MenuPageViewModel : BindableObject
     {
+        public AppViewModel App { get { return AppViewModel.Instance; } }
+
+        public ICommand RefreshCommand { get; }
+
+        #region bool IsRefreshAvailable 
+
+        public bool IsRefreshAvailable
+        {
+            get { return (bool)this.GetValue(IsRefreshAvailableProperty); }
+            set { this.SetValue(IsRefreshAvailableProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for IsRefreshAvailable.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty IsRefreshAvailableProperty =
+            BindableProperty.Create("IsRefreshAvailable", typeof(bool), typeof(MenuPageViewModel), default(bool));
+
+        #endregion
+
+        #region bool IsRefreshing 
+
+        public bool IsRefreshing
+        {
+            get { return (bool)this.GetValue(IsRefreshingProperty); }
+            set { this.SetValue(IsRefreshingProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for IsRefreshing.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty IsRefreshingProperty =
+            BindableProperty.Create("IsRefreshing", typeof(bool), typeof(MenuPageViewModel), default(bool));
+
+        #endregion
+
         public bool IsPresented { get; private set; }
 
         public MenuPageViewModel PreviousPage { get; set; }
 
         public string Title { get; }
 
-        protected MenuPageViewModel(string title)
+        public AppStateGroupViewModel Group { get; }
+
+        protected MenuPageViewModel(string title, AppStateGroupViewModel group)
         {
             this.Title = title;
+            this.Group = group;
+            this.Group.Add(this);
+
+            this.IsRefreshing = false;
+            this.IsRefreshAvailable = false;
+            this.RefreshCommand = new Command(() => {
+                this.OnRefresh();
+            });
         }
 
         public virtual void OnEnter() { this.IsPresented = true; }
 
         public virtual void OnExit() { this.IsPresented = false; }
+
+        public virtual void OnRefresh() { }
     }
 
     public class AppViewModel : BindableObject
     {
+        #region string CurrentTitle 
+
+        public string CurrentTitle
+        {
+            get { return (string)this.GetValue(CurrentTitleProperty); }
+            set { this.SetValue(CurrentTitleProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for CurrentTitle.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty CurrentTitleProperty =
+            BindableProperty.Create("CurrentTitle", typeof(string), typeof(AppViewModel), default(string));
+
+        #endregion
+
+        #region IEnumerable<object> CurrentVisiblePages 
+
+        public IEnumerable<object> CurrentVisiblePages
+        {
+            get { return (IEnumerable<object>)this.GetValue(CurrentVisiblePagesProperty); }
+            set { this.SetValue(CurrentVisiblePagesProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for CurrentVisiblePages.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty CurrentVisiblePagesProperty =
+            BindableProperty.Create("CurrentVisiblePages", typeof(IEnumerable<object>), typeof(AppViewModel), default(IEnumerable<object>), propertyChanged: OnCurrentVisiblePagesChanged);
+
+        #endregion
+
+        private static void OnCurrentVisiblePagesChanged(BindableObject obj, object oldValue, object newValue)
+        {
+            if (obj is AppViewModel vm && newValue is IEnumerable<object> items)
+            {
+                vm.CurrentTitle = string.Join(", ", items.OfType<MenuPageViewModel>().Select(p => p.Title));
+            }
+        }
+
+        public static AppViewModel Instance { get; private set; }
+
+        public bool IsOnUwp { get; }
+
+        #region double DesiredPageWidth 
+
+        public double DesiredPageWidth
+        {
+            get { return (double)this.GetValue(DesiredPageWidthProperty); }
+            set { this.SetValue(DesiredPageWidthProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for DesiredPageWidth.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty DesiredPageWidthProperty =
+            BindableProperty.Create("DesiredPageWidth", typeof(double), typeof(AppViewModel), default(double));
+
+        #endregion
+
         #region AppStateViewModel CurrentStateModel 
 
         public AppStateViewModel CurrentStateModel
@@ -48,10 +146,9 @@ namespace MusicShare.ViewModels
 
         #endregion
 
-        readonly HomeAppViewModel _home;
-        readonly RootAppViewModel _root;
-
-        readonly MusicShareSvcApi _api = new MusicShareSvcApi("http://172.16.100.47:8181/mysvc", WebSvcMode.Xml);
+        private readonly HomeAppViewModel _home;
+        private readonly RootAppViewModel _root;
+        private readonly MusicShareSvcApi _api = new MusicShareSvcApi("http://172.16.100.47:8181/mysvc", WebSvcMode.Xml);
 
         internal MusicShareSvcApi Api { get { return _api; } }
 
@@ -102,31 +199,27 @@ namespace MusicShare.ViewModels
 
         public ICommand ClearErrorsCommand { get; }
 
-        internal ConnectivityViewModel ConnectivityViewModel { get;private set; }
-        internal PlaybackViewModel PlaybackViewModel { get;private set; }
-
         public AppViewModel()
         {
-            AppDomain.CurrentDomain.FirstChanceException += (sender, ea) =>
-            {
+            Instance = this;
+            this.IsOnUwp = DeviceInfo.Platform == DevicePlatform.UWP;
+
+            AppDomain.CurrentDomain.FirstChanceException += (sender, ea) => {
                 System.Diagnostics.Debug.Print(ea.Exception.ToString());
                 System.Diagnostics.Debug.Print(ea.Exception.StackTrace);
             };
-            AppDomain.CurrentDomain.UnhandledException += (sender, ea) =>
-            {
+            AppDomain.CurrentDomain.UnhandledException += (sender, ea) => {
                 var ex = (Exception)ea.ExceptionObject;
                 System.Diagnostics.Debug.Print(ex.ToString());
                 System.Diagnostics.Debug.Print(ex.StackTrace);
                 try { _api.PushErrorReport(ex).Wait(); } catch { }
             };
 
-            this.ConnectivityViewModel = new ConnectivityViewModel(this);
-            this.PlaybackViewModel = new PlaybackViewModel(this);
-
-            _home = new HomeAppViewModel(this);
-            _root = new RootAppViewModel(this);
+            _home = new HomeAppViewModel();
+            _root = new RootAppViewModel();
 
             this.CurrentStateModel = _home;
+            this.CurrentStateModel.CurrentPage = _home.PlaybackPage;
 
             this.ClearErrorsCommand = new Command(this.ClearPopups);
         }
@@ -284,6 +377,18 @@ namespace MusicShare.ViewModels
         {
             this.Popups.Clear();
             this.HasError = false;
+        }
+
+        internal void UpdateSize(Size size)
+        {
+            if (size.Height > 480)
+            {
+                this.DesiredPageWidth = Math.Min(size.Width, size.Height * 3.0 / 4.0);
+            }
+            else
+            {
+                this.DesiredPageWidth = size.Width;
+            }
         }
     }
 

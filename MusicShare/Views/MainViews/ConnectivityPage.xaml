@@ -39,6 +39,7 @@
             <RowDefinition Height="10" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" ColumnSpacing="5">
@@ -47,13 +48,13 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Switch Grid.Column="0" IsToggled="{Binding IsSharingActivated}" />
+            <!--<Switch Grid.Column="0" IsToggled="{Binding IsSharingActivated}" />-->
             <Label Grid.Column="1" Text="Share" />
-            <Button Grid.Column="2" Text="Beacon" Command="{Binding MakeBeaconCommand}" />
+            <Button Grid.Column="2" Text="Beacon" IsEnabled="{Binding IsSharingActivated}" Command="{Binding MakeBeaconCommand}" />
         </Grid>
 
 
-        <Grid Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsSharingActivated}" ColumnSpacing="5" RowSpacing="5">
+        <Grid Grid.Row="1" Grid.Column="1" ColumnSpacing="5" RowSpacing="5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -64,14 +65,14 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Switch Grid.Row="0" Grid.Column="0" IsToggled="{Binding IsWanSharingActivated}"/>
-            <Label Grid.Row="0" Grid.Column="1" Text="Internet" />
+            <Switch Grid.Row="0" Grid.Column="0" IsEnabled="{Binding IsWanSharingEnabled}" IsToggled="{Binding IsWanSharingActivated}" />
+            <Label Grid.Row="0" Grid.Column="1" IsEnabled="{Binding IsWanSharingEnabled}" Text="Internet" />
 
-            <Switch Grid.Row="1" Grid.Column="0" IsToggled="{Binding IsLanSharingActivated}"/>
-            <Label Grid.Row="1" Grid.Column="1" Text="LAN" />
+            <Switch Grid.Row="1" Grid.Column="0" IsEnabled="{Binding IsLanSharingEnabled}" IsToggled="{Binding IsLanSharingActivated}" />
+            <Label Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsLanSharingEnabled}" Text="LAN" />
 
-            <Switch Grid.Row="2" Grid.Column="0" IsToggled="{Binding IsBtSharingActivated}"/>
-            <Label Grid.Row="2" Grid.Column="1" Text="Bluetooth" />
+            <Switch Grid.Row="2" Grid.Column="0" IsEnabled="{Binding IsBtSharingEnabled}" IsToggled="{Binding IsBtSharingActivated}" />
+            <Label Grid.Row="2" Grid.Column="1" IsEnabled="{Binding IsBtSharingEnabled}" Text="Bluetooth" />
         </Grid>
 
         <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" ColumnSpacing="5">
@@ -80,13 +81,13 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Switch Grid.Column="0" IsToggled="{Binding PickUpActivated}" />
+            <!--<Switch Grid.Column="0" IsToggled="{Binding PickUpActivated}" />-->
             <Label Grid.Column="1" Text="Pick up" />
             <Button Grid.Column="2" Text="Spot" Command="{Binding MakeSpotCommand}" />
         </Grid>
 
         <Grid Grid.Row="4" Grid.Column="1" RowSpacing="5">
-            <RefreshView IsRefreshing="{Binding IsRefreshingDevices, Mode=TwoWay}" Command="{Binding RefreshDevicesCommand}">
+            <!--<RefreshView IsRefreshing="{Binding IsRefreshingDevices, Mode=TwoWay}" Command="{Binding RefreshDevicesCommand}">-->
                 <ListView Grid.Row="0" ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
                       HasUnevenRows="True" CachingStrategy="RecycleElement" RowHeight="-1">
                     <ListView.ItemTemplate>
@@ -111,12 +112,22 @@
                                     <Label Grid.Column="0" Text="{Binding Title}" LineBreakMode="WordWrap" />
                                     <Label Grid.Column="1" Text="{Binding Ping}" LineBreakMode="NoWrap" HorizontalOptions="EndAndExpand" />
                                     <Button Grid.Column="2" Text="Connect" IsVisible="{Binding IsConnectBtnVisible}" Command="{Binding ConnectCommand}" />
+                                    <Button Grid.Column="2" Text="Disconnect" IsVisible="{Binding IsDisconnectBtnVisible}" Command="{Binding DisconnectCommand}" />
                                 </Grid>
                             </ViewCell>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-            </RefreshView>
+            <!--</RefreshView>-->
+        </Grid>
+        
+        <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" ColumnSpacing="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="2" Text="Refresh" Command="{Binding RefreshCommand}" />
         </Grid>
     </Grid>
 

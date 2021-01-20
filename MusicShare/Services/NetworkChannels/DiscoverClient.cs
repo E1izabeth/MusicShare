@@ -7,7 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace MusicShare.Net.Discovery
+namespace MusicShare.Services.NetworkChannels
 {
 
     public class DiscoverClient : DisposableObject
@@ -39,7 +39,7 @@ namespace MusicShare.Net.Discovery
 
             _sck = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
             _sck.EnableBroadcast = true;
-            _sck.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, 0);
+            _sck.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             _sck.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
             _sck.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
 
@@ -64,7 +64,7 @@ namespace MusicShare.Net.Discovery
                 var l = _sck.EndReceiveFrom(ar, ref ep);
 
                 if ((ep.AddressFamily == AddressFamily.InterNetwork || ep.AddressFamily == AddressFamily.InterNetworkV6)&&
-                     l > _serviceIdBytes.Length && Enumerable.SequenceEqual(_recvBuffer.Take(_serviceIdBytes.Length), _serviceIdBytes))
+                     l > _serviceIdBytes.Length + 4 && Enumerable.SequenceEqual(_recvBuffer.Take(_serviceIdBytes.Length), _serviceIdBytes))
                 {
                     var ipep = (IPEndPoint)ep;
 
@@ -77,8 +77,10 @@ namespace MusicShare.Net.Discovery
                         if (!_knownSevers.ContainsKey(key))
                         {
                             var ping = DateTime.Now - _stamp;
+                            var nameLength = BitConverter.ToInt32(_recvBuffer, _serviceIdBytes.Length);
+                            var name = Encoding.UTF8.GetString(_recvBuffer, _serviceIdBytes.Length + 4, nameLength);
 
-                            var item = new NetHostInfo(Encoding.UTF8.GetString(_recvBuffer.Skip(_serviceIdBytes.Length).ToArray(), 0, l), addr, ping, port);
+                            var item = new NetHostInfo(name, addr, ping, port);
 
                             _knownSevers[key] = item;
 

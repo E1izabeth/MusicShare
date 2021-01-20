@@ -10,11 +10,11 @@ using static Xamarin.Forms.BindableProperty;
 
 namespace MusicShare.Views
 {
-    class CollectionBindingContext<TValue> : BindableObject
+    class CollectionBindingContext : BindableObject
     {
-        public ObservableCollection<TValue> Collection { get; private set; }
+        public INotifyCollectionChanged Collection { get; private set; }
 
-        public event Action<ObservableCollection<TValue>, NotifyCollectionChangedEventArgs> OnCollectionChanged = delegate { };
+        public event Action<INotifyCollectionChanged, NotifyCollectionChangedEventArgs> OnCollectionChanged = delegate { };
 
         public CollectionBindingContext()
         {
@@ -32,7 +32,7 @@ namespace MusicShare.Views
 
         internal void HandleCollectionPropertyChanged(object oldValue, object newValue)
         {
-            if (oldValue is ObservableCollection<TValue> oldCollection)
+            if (oldValue is INotifyCollectionChanged oldCollection)
             {
                 if (this.Collection != oldCollection)
                     throw new InvalidOperationException("Unexpected collection");
@@ -42,7 +42,7 @@ namespace MusicShare.Views
                 this.RaizeViewLocsCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
             }
 
-            if (newValue is ObservableCollection<TValue> newCollection)
+            if (newValue is INotifyCollectionChanged newCollection)
             {
                 if (this.Collection != null)
                     throw new InvalidOperationException("Unexpected collection");
@@ -56,17 +56,17 @@ namespace MusicShare.Views
 
     class CollectionBindingWatcher
     {
-        public static BindingPropertyChangedDelegate For<TContainer, TValue>(Func<TContainer, CollectionBindingContext<TValue>> contextGetter)
+        public static BindingPropertyChangedDelegate For<TContainer>(Func<TContainer, CollectionBindingContext> contextGetter)
         {
-            return new CollectionBindingWatcher<TContainer, TValue>(contextGetter).HandleCollectionPropertyChanged;
+            return new CollectionBindingWatcher<TContainer>(contextGetter).HandleCollectionPropertyChanged;
         }
     }
 
-    class CollectionBindingWatcher<TContainer, TValue>
+    class CollectionBindingWatcher<TContainer>
     {
-        readonly Func<TContainer, CollectionBindingContext<TValue>> _contextGetter;
+        readonly Func<TContainer, CollectionBindingContext> _contextGetter;
 
-        public CollectionBindingWatcher(Func<TContainer, CollectionBindingContext<TValue>> contextGetter)
+        public CollectionBindingWatcher(Func<TContainer, CollectionBindingContext> contextGetter)
         {
             _contextGetter = contextGetter;
         }

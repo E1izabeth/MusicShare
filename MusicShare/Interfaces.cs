@@ -1,80 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Text;
+using MusicShare.Services;
+using MusicShare.Services.Bluetooth;
+using MusicShare.Services.NetworkChannels;
 
 namespace MusicShare
 {
-    public class BtDeviceEntryInfo
+    public class PlayerTrackInfo : INotifyPropertyChanged
     {
-        public string Address { get; private set; }
-        public string Name { get; private set; }
+        public event PropertyChangedEventHandler PropertyChanged;
 
-        public BtDeviceEntryInfo(string address, string name)
-        {
-            this.Address = address;
-            this.Name = name;
-        }
-    }
-
-    public interface IBluetoothConnector
-    {
-        event Action OnActivated;
-        event Action OnDeactivate;
-
-        event Action OnDiscoverReset;
-        event Action<BtDeviceEntryInfo> OnDiscoverFound;
-
-        // event Action<BtDeviceConnection> OnNewConnection;
-
-        bool IsEnabled { get; }
-        // bool IsDiscovering { get; }
-
-
-        void RefreshDevices();
-        bool ConnectBt(string addr);
-    }
-
-    public class NetHostInfo
-    {
-        public string Name { get; private set; }
-        public string Address { get; private set; }
-        public TimeSpan Ping { get; private set; }
-        public ushort Port { get; private set; }
-
-        public NetHostInfo(string name, string address, TimeSpan ping, ushort port)
-        {
-            this.Name = name;
-            this.Address = address;
-            this.Ping = ping;
-            this.Port = port;
-        }
-    }
-
-    public interface INetworkConnector
-    {
-        event Action OnDiscoverReset;
-        event Action<NetHostInfo> OnDiscoverFound;
-
-        // event Action<NetDeviceConnection> OnNewConnection;
-
-        bool IsEnabled { get; }
-
-        void RefreshHosts();
-
-        bool ConnectTo(string host, ushort port);
-    }
-
-    public class PlayerTrackInfo
-    {
         public string Album { get; private set; }
         public int? TrackNumber { get; private set; }
         public string Artist { get; private set; }
-        public TimeSpan Duration { get; private set; }
+        public TimeSpan? Duration { get; private set; }
         public string Title { get; private set; }
         public string FilePathOrUri { get; private set; }
+        public IDeviceChannel Channel { get; private set; }
 
-        public PlayerTrackInfo(string album, int? trackNumber, string artist, TimeSpan duration, string title, string filePathOrUri)
+        public PlayerTrackInfo(string album, int? trackNumber, string artist, TimeSpan? duration, string title, string filePathOrUri)
         {
             this.Album = album;
             this.TrackNumber = trackNumber;
@@ -82,6 +29,24 @@ namespace MusicShare
             this.Duration = duration;
             this.Title = title;
             this.FilePathOrUri = filePathOrUri;
+            this.Channel = null;
+        }
+
+        public PlayerTrackInfo(IDeviceChannel channel)
+        {
+            this.Album = null;
+            this.TrackNumber = null;
+            this.Artist = "[" + channel.RemotePeerName + "]";
+            this.Duration = null;
+            this.Title = "...";
+            this.FilePathOrUri = null;
+            this.Channel = channel;
+            this.Channel.OnTrackInfo += pckt => {
+                this.Artist = "[" + channel.RemotePeerName + "] " + pckt.AuthorPlaying;
+                this.Title = pckt.TitlePlaying;
+                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Artist"));
+                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Title"));
+            };
         }
     }
 
@@ -91,6 +56,7 @@ namespace MusicShare
         event Action<int> OnRemoveItem;
         event Action<int, PlayerTrackInfo> OnInsertItem;
         event Action<int> OnActiveItemChanged;
+        event Action<int, PlayerTrackInfo> OnUpdateItem;
 
         int ActiveTrackIndex { get; }
 
@@ -109,27 +75,12 @@ namespace MusicShare
         Paused
     }
 
-    public interface IDeviceChannel
-    {
-        System.IO.Stream Stream { get; }
-    }
-
-    public interface IBtDeviceChannel : IDeviceChannel
-    {
-        BtDeviceEntryInfo Info { get; }
-    }
-
-    public interface INetDeviceChannel : IDeviceChannel
-    {
-        NetHostInfo Info { get; }
-    }
-
     public interface IPlayer
     {
+        event Action<IDeviceChannel> OnConnection;
+
         event Action OnStateChanged;
         event Action OnPositionChanged;
-        
-        event Action<IDeviceChannel> OnConnection;
 
         IBluetoothConnector BtConnector { get; }
         INetworkConnector NetConnector { get; }
@@ -152,7 +103,7 @@ namespace MusicShare
         void JumpToTrack(int index);
 
         ConnectivityInfoType GetConnectivityInfo();
-        void Connect(ConnectivityInfoType target, Action callback);
+        void Connect(ConnectivityInfoType target, Action<bool> callback);
     }
 
     public interface IPlayerService
@@ -176,6 +127,16 @@ namespace MusicShare
         public static void SetInstance(IPlayerService service)
         {
             Instance = service;
+        }
+    }
+
+    public class ActivityContext
+    {
+        public static IActivity Instance { get; private set; }
+
+        public static void SetInstance(IActivity activity)
+        {
+            Instance = activity;
         }
     }
 }

@@ -75,13 +75,13 @@
     <Compile Include="Util\WcfUtils.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MusicShare.Interaction.Standard\MusicShare.Interaction.Standard.csproj">
-      <Project>{7E150732-FEED-4435-BBDB-CE596D8F0E34}</Project>
-      <Name>MusicShare.Interaction.Standard</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MusicShare.Interaction\MusicShare.Interaction.csproj">
       <Project>{bada3481-3dc0-48cf-9e87-fcf6ae05bcb8}</Project>
       <Name>MusicShare.Interaction</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MusicShare.Shared\MusicShare.Shared.csproj">
+      <Project>{01272401-58ce-4d9a-84cb-9aec791961f5}</Project>
+      <Name>MusicShare.Shared</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

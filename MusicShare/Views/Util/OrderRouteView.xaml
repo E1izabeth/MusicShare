@@ -4,15 +4,15 @@
       xmlns:d="http://xamarin.com/schemas/2014/forms/design"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       mc:Ignorable="d"
-      xmlns:mapsui="clr-namespace:Mapsui.UI.Forms;assembly=Mapsui.UI.Forms"
+      
       x:Class="MusicShare.Views.Util.OrderRouteView">
     <Grid>
 
-
-
+<!--
+xmlns:mapsui="clr-namespace:Mapsui.UI.Forms;assembly=Mapsui.UI.Forms"
         <mapsui:MapView x:Name="mapView" VerticalOptions="FillAndExpand"
                                                 HorizontalOptions="Fill"
                                                 BackgroundColor="Gray" />
-
+-->
     </Grid>
 </Grid>

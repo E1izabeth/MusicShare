@@ -16,9 +16,16 @@ using System.Threading.Tasks;
 namespace MusicShare.Droid
 {
     
-    [Activity(Theme = "@style/MyTheme.Splash", MainLauncher = true, NoHistory = true)]
+    [Activity(Theme = "@style/MyTheme.Splash", MainLauncher = true, NoHistory = true, Name = "musicshare.droid.SplashActivity")]
     public class SplashActivity : AppCompatActivity
     {
+        public SplashActivity()
+        {
+            AppDomain.CurrentDomain.UnhandledException += (sender, ea) => {
+                System.Diagnostics.Debug.Print(ea.ToString());
+            };
+        }
+
         public override void OnCreate(Bundle savedInstanceState, PersistableBundle persistentState)
         {
             base.OnCreate(savedInstanceState, persistentState);

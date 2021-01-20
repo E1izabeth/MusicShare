@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using Xamarin.Forms;
-using Xamarin.Forms.Xaml;
-
 using MusicShare.Models;
 using MusicShare.ViewModels;
+using Xamarin.Forms;
+using Xamarin.Forms.Xaml;
 
 namespace MusicShare.Views
 {
@@ -21,6 +20,8 @@ namespace MusicShare.Views
         {
             this.BindingContext = this.AppModel = new AppViewModel();
             this.InitializeComponent();
+
+            // this.Height*4/4
         }
 
         protected override bool OnBackButtonPressed()
@@ -42,6 +43,12 @@ namespace MusicShare.Views
             ////}
             ///
             return false;
+        }
+
+        private void OnSizeChanged(object sender, EventArgs e)
+        {
+            var element = (VisualElement)sender;
+            AppViewModel.Instance.UpdateSize(new Xamarin.Forms.Size(element.Width, element.Height));
         }
     }
 }

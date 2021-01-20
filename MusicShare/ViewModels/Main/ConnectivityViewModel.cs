@@ -1,5 +1,4 @@
-﻿using MusicShare.Interaction.Standard.Common;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -8,12 +7,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
+using MusicShare.Interaction.Standard.Common;
+using MusicShare.Services;
+using MusicShare.Services.Bluetooth;
+using MusicShare.Services.NetworkChannels;
 using Xamarin.Forms;
 using ZXing;
 
 namespace MusicShare.ViewModels.Home
 {
-    abstract class DeviceEntry : BindableObject
+    public abstract class DeviceEntry : BindableObject
     {
         #region bool IsConnectBtnVisible 
 
@@ -29,6 +32,20 @@ namespace MusicShare.ViewModels.Home
 
         #endregion
 
+        #region bool IsDisconnectBtnVisible 
+
+        public bool IsDisconnectBtnVisible
+        {
+            get { return (bool)this.GetValue(IsDisconnectBtnVisibleProperty); }
+            set { this.SetValue(IsDisconnectBtnVisibleProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for IsDisconnectBtnVisible.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty IsDisconnectBtnVisibleProperty =
+            BindableProperty.Create("IsDisconnectBtnVisible", typeof(bool), typeof(DeviceEntry), default(bool));
+
+        #endregion
+
         public ConnectivityViewModel Owner { get; }
 
         public abstract string Title { get; }
@@ -36,15 +53,18 @@ namespace MusicShare.ViewModels.Home
         public abstract bool IsConnected { get; }
 
         public ICommand ConnectCommand { get; }
+        public ICommand DisconnectCommand { get; }
 
         protected DeviceEntry(ConnectivityViewModel owner)
         {
             this.Owner = owner;
 
             this.ConnectCommand = new Command(async () => this.DoConnect());
+            this.DisconnectCommand = new Command(async () => this.DoDisconnect());
         }
 
         protected abstract void DoConnect();
+        protected abstract void DoDisconnect();
 
         //public void ForceBindingds()
         //{
@@ -54,14 +74,17 @@ namespace MusicShare.ViewModels.Home
         //    this.OnPropertyChanged("IsConnectBtnVisible");
         //    this.OnPropertyChanged("ConnectCommand");
         //}
+
+        public abstract override string ToString();
     }
 
-    class BtDeviceEntry : DeviceEntry
+    public class BtDeviceEntry : DeviceEntry
     {
         public BtDeviceEntryInfo Info { get; }
 
         public override string Title { get { return this.Info.Name; } }
-        public override string Ping { get { return "[" + this.Info.Address + "]"; } }
+        // public override string Ping { get { return "[" + this.Info.Address + "]"; } }
+        public override string Ping { get { return "𝄐"; } }
         public override bool IsConnected { get { return false; } }
 
         public BtDeviceEntry(ConnectivityViewModel owner, BtDeviceEntryInfo info)
@@ -74,14 +97,25 @@ namespace MusicShare.ViewModels.Home
         {
             this.Owner.DoBtConnect(this);
         }
+
+        protected override void DoDisconnect()
+        {
+            // do nothing
+        }
+
+        public override string ToString()
+        {
+            return "BT|" + this.Info.Address;
+        }
     }
 
-    class NetDeviceEntry : DeviceEntry
+    public class NetDeviceEntry : DeviceEntry
     {
         public NetHostInfo Info { get; }
 
         public override string Title { get { return this.Info.Name; } }
-        public override string Ping { get { return this.Info.Ping.Truncate(TimeSpan.FromMilliseconds(1)).TotalSeconds + "[" + this.Info.Address + "]"; } }
+        // public override string Ping { get { return this.Info.Ping.Truncate(TimeSpan.FromMilliseconds(1)).TotalSeconds + "[" + this.Info.Address + "]"; } }
+        public override string Ping { get { return this.Info.Ping.Truncate(TimeSpan.FromMilliseconds(1)).TotalSeconds.ToString("0.###"); } }
         public override bool IsConnected { get { return false; } }
 
         public NetDeviceEntry(ConnectivityViewModel owner, NetHostInfo info)
@@ -94,9 +128,19 @@ namespace MusicShare.ViewModels.Home
         {
             this.Owner.DoNetConnect(this);
         }
+
+        protected override void DoDisconnect()
+        {
+            // do nothing
+        }
+
+        public override string ToString()
+        {
+            return "NET|" + this.Info.Address;
+        }
     }
 
-    class DeviceChannelEntry : DeviceEntry
+    public class DeviceChannelEntry : DeviceEntry
     {
         private DeviceEntry _entry;
 
@@ -104,12 +148,12 @@ namespace MusicShare.ViewModels.Home
         public override string Ping { get { return _entry.Ping; } }
         public override bool IsConnected { get { return true; } }
 
-        IDeviceChannel _chan;
+        public IDeviceChannel Channel { get; }
 
         public DeviceChannelEntry(ConnectivityViewModel owner, IDeviceChannel chan)
             : base(owner)
         {
-            _chan = chan;
+            this.Channel = chan;
 
             switch (chan)
             {
@@ -128,10 +172,30 @@ namespace MusicShare.ViewModels.Home
         {
             // do nothing
         }
+
+        protected override void DoDisconnect()
+        {
+            this.Owner.DoDisconnect(this);
+        }
+
+
+        public override string ToString()
+        {
+            return "CHAN|" + _entry.ToString();
+        }
     }
 
-    class ConnectivityViewModel : MenuPageViewModel
+    public enum ConnectivityMode
     {
+        Bluetooth,
+        Lan,
+        Wan
+    }
+
+    public class ConnectivityViewModel : MenuPageViewModel
+    {
+        // bool _wasWanActivated = true, _wasLanActivated = true, _wasBtActivated = true;
+
         #region bool IsSharingActivated 
 
         public bool IsSharingActivated
@@ -142,7 +206,27 @@ namespace MusicShare.ViewModels.Home
 
         // Using a BindableProperty as the backing store for IsSharingActivated. This enables animation, styling, binding, etc...
         public static readonly BindableProperty IsSharingActivatedProperty =
-            BindableProperty.Create("IsSharingActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool));
+            BindableProperty.Create("IsSharingActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool), propertyChanging: IsSharingActivatedChanging);
+
+        #endregion
+
+        private static void IsSharingActivatedChanging(BindableObject bindable, object oldValue, object newValue)
+        {
+            //if (bindable is ConnectivityViewModel cvm && newValue is bool activate)
+            //cvm.SwitchConnectivitySharing(false,null,activate);
+        }
+
+        #region bool IsWanSharingEnabled 
+
+        public bool IsWanSharingEnabled
+        {
+            get { return (bool)this.GetValue(IsWanSharingEnabledProperty); }
+            set { this.SetValue(IsWanSharingEnabledProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for IsWanSharingEnabled.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty IsWanSharingEnabledProperty =
+            BindableProperty.Create("IsWanSharingEnabled", typeof(bool), typeof(ConnectivityViewModel), default(bool));
 
         #endregion
 
@@ -156,7 +240,27 @@ namespace MusicShare.ViewModels.Home
 
         // Using a BindableProperty as the backing store for IsWanSharingActivated. This enables animation, styling, binding, etc...
         public static readonly BindableProperty IsWanSharingActivatedProperty =
-            BindableProperty.Create("IsWanSharingActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool));
+            BindableProperty.Create("IsWanSharingActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool), propertyChanging: IsWanSharingActivatedChanging);
+
+        #endregion
+
+        private static void IsWanSharingActivatedChanging(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is ConnectivityViewModel cvm && newValue is bool activate)
+                cvm.SwitchConnectivitySharing(false, ConnectivityMode.Wan, activate);
+        }
+
+        #region bool IsLanSharingEnabled 
+
+        public bool IsLanSharingEnabled
+        {
+            get { return (bool)this.GetValue(IsLanSharingEnabledProperty); }
+            set { this.SetValue(IsLanSharingEnabledProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for IsLanSharingEnabled.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty IsLanSharingEnabledProperty =
+            BindableProperty.Create("IsLanSharingEnabled", typeof(bool), typeof(ConnectivityViewModel), default(bool));
 
         #endregion
 
@@ -170,7 +274,27 @@ namespace MusicShare.ViewModels.Home
 
         // Using a BindableProperty as the backing store for IsLanSharingActivated. This enables animation, styling, binding, etc...
         public static readonly BindableProperty IsLanSharingActivatedProperty =
-            BindableProperty.Create("IsLanSharingActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool));
+            BindableProperty.Create("IsLanSharingActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool), propertyChanging: IsLanSharingActivatedChanging);
+
+        #endregion
+
+        private static void IsLanSharingActivatedChanging(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is ConnectivityViewModel cvm && newValue is bool activate)
+                cvm.SwitchConnectivitySharing(false, ConnectivityMode.Lan, activate);
+        }
+
+        #region bool IsBtSharingEnabled
+
+        public bool IsBtSharingEnabled
+        {
+            get { return (bool)this.GetValue(IsBtSharingEnabledProperty); }
+            set { this.SetValue(IsBtSharingEnabledProperty, value); }
+        }
+
+        // Using a BindableProperty as the backing store for IsBtSharingEnabled.  This enables animation, styling, binding, etc...
+        public static readonly BindableProperty IsBtSharingEnabledProperty =
+            BindableProperty.Create("IsBtSharingEnabled", typeof(bool), typeof(ConnectivityViewModel), default(bool));
 
         #endregion
 
@@ -184,9 +308,15 @@ namespace MusicShare.ViewModels.Home
 
         // Using a BindableProperty as the backing store for IsBtSharingActivated. This enables animation, styling, binding, etc...
         public static readonly BindableProperty IsBtSharingActivatedProperty =
-            BindableProperty.Create("IsBtSharingActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool));
+            BindableProperty.Create("IsBtSharingActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool), propertyChanging: IsBtSharingActivatedChanging);
 
         #endregion
+
+        private static void IsBtSharingActivatedChanging(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is ConnectivityViewModel cvm && newValue is bool activate)
+                cvm.SwitchConnectivitySharing(false, ConnectivityMode.Bluetooth, activate);
+        }
 
         #region bool PickUpActivated 
 
@@ -198,9 +328,15 @@ namespace MusicShare.ViewModels.Home
 
         // Using a BindableProperty as the backing store for PickUpActivated. This enables animation, styling, binding, etc...
         public static readonly BindableProperty PickUpActivatedProperty =
-            BindableProperty.Create("PickUpActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool));
+            BindableProperty.Create("PickUpActivated", typeof(bool), typeof(ConnectivityViewModel), default(bool), propertyChanging: OnPickUpActivatedChanging);
 
         #endregion
+
+        private static void OnPickUpActivatedChanging(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is ConnectivityViewModel cvm && newValue is bool activate && activate)
+                cvm.RefreshCommand.Execute(null);
+        }
 
         #region ObservableCollection<DeviceEntry> Devices 
 
@@ -231,32 +367,23 @@ namespace MusicShare.ViewModels.Home
 
         #endregion
 
-        static void OnSelectedDeviceChanging(BindableObject bindable, object oldValue, object newValue)
+        private static void OnSelectedDeviceChanging(BindableObject bindable, object oldValue, object newValue)
         {
-            if (oldValue is DeviceEntry deselected && !deselected.IsConnected)
+            if (oldValue is DeviceEntry deselected)
+            {
+                deselected.IsDisconnectBtnVisible = false;
                 deselected.IsConnectBtnVisible = false;
+            }
 
-            if (newValue is DeviceEntry selected && !selected.IsConnected)
-                selected.IsConnectBtnVisible = true;
+            if (newValue is DeviceEntry selected)
+            {
+                selected.IsConnectBtnVisible = !selected.IsConnected;
+                selected.IsDisconnectBtnVisible = selected.IsConnected;
+            }
         }
-
-        #region bool IsRefreshingDevices 
-
-        public bool IsRefreshingDevices
-        {
-            get { return (bool)this.GetValue(IsRefreshingDevicesProperty); }
-            set { this.SetValue(IsRefreshingDevicesProperty, value); }
-        }
-
-        // Using a BindableProperty as the backing store for IsRefreshingDevices. This enables animation, styling, binding, etc...
-        public static readonly BindableProperty IsRefreshingDevicesProperty =
-            BindableProperty.Create("IsRefreshingDevices", typeof(bool), typeof(ConnectivityViewModel), default(bool));
-
-        #endregion
 
         public ICommand MakeBeaconCommand { get; }
         public ICommand MakeSpotCommand { get; }
-        public ICommand RefreshDevicesCommand { get; }
         public ICommand CloseQrCommand { get; }
 
         #region bool IsQrVisible 
@@ -277,7 +404,7 @@ namespace MusicShare.ViewModels.Home
 
         public object QrContent
         {
-            get { return (object)this.GetValue(QrContentProperty); }
+            get { return this.GetValue(QrContentProperty); }
             set { this.SetValue(QrContentProperty, value); }
         }
 
@@ -287,18 +414,22 @@ namespace MusicShare.ViewModels.Home
 
         #endregion
 
+        private readonly Dictionary<string, DeviceEntry> _knownDevices = new Dictionary<string, DeviceEntry>();
+        private readonly List<DeviceEntry> _channels = new List<DeviceEntry>();
+        private readonly AppViewModel _app;
 
-        readonly List<DeviceEntry> _channels = new List<DeviceEntry>();
-        readonly AppViewModel _app;
-
-        public ConnectivityViewModel(AppViewModel app)
-            : base("Connectivity")
+        public ConnectivityViewModel(AppStateGroupViewModel group)
+            : base("Connectivity", group)
         {
-            _app = app;
-            this.IsSharingActivated = true;
-            this.IsBtSharingActivated = true;
-            this.IsLanSharingActivated = true;
-            this.IsWanSharingActivated = true;
+            var app = _app = this.App;
+
+            this.IsSharingActivated = false;
+            this.IsBtSharingActivated = false;
+            this.IsLanSharingActivated = false;
+            this.IsWanSharingActivated = false;
+            this.IsBtSharingEnabled = true;
+            this.IsLanSharingEnabled = true;
+            this.IsWanSharingEnabled = true;
 
             this.Devices = new ObservableCollection<DeviceEntry>();
 
@@ -306,22 +437,27 @@ namespace MusicShare.ViewModels.Home
 
             player.OnConnection += chan => this.InvokeAction(() => {
                 var newEntry = new DeviceChannelEntry(this, chan);
+                chan.OnClosed += () => this.InvokeAction(() => {
+                    _channels.Remove(newEntry);
+                    this.Devices.Remove(newEntry);
+                });
+
                 _channels.Add(newEntry);
                 this.Devices.Insert(0, newEntry);
             });
 
-            player.BtConnector.OnActivated += () => this.InvokeAction(() => {
-                this.IsBtSharingActivated = true;
+            player.BtConnector.OnStateChanged += ok => this.InvokeAction(() => {
+                this.SwitchConnectivitySharing(true, ConnectivityMode.Bluetooth, ok);
             });
-            player.BtConnector.OnDeactivate += () => this.InvokeAction(() => {
-                this.IsBtSharingActivated = false;
-            });
-            player.BtConnector.OnDiscoverFound += (d) => this.InvokeAction(() => {
-                this.Devices.Add(new BtDeviceEntry(this, d));
+            player.BtConnector.OnDiscover += (d) => this.InvokeAction(() => {
+                this.RegisterDiscoveredDevice(new BtDeviceEntry(this, d));
             });
 
-            player.NetConnector.OnDiscoverFound += (d) => this.InvokeAction(() => {
-                this.Devices.Add(new NetDeviceEntry(this, d));
+            player.NetConnector.OnStateChanged += ok => this.InvokeAction(() => {
+                this.SwitchConnectivitySharing(true, ConnectivityMode.Lan, ok);
+            });
+            player.NetConnector.OnDiscover += (d) => this.InvokeAction(() => {
+                this.RegisterDiscoveredDevice(new NetDeviceEntry(this, d));
             });
 
             this.MakeBeaconCommand = new Command(async () => {
@@ -337,29 +473,47 @@ namespace MusicShare.ViewModels.Home
                 if (connectivityInfo != null)
                 {
                     app.OperationInProgress = true;
-                    player.Connect(connectivityInfo, () => this.InvokeAction(() => {
+                    player.Connect(connectivityInfo, ok => this.InvokeAction(() => {
                         app.OperationInProgress = false;
+
+                        if (!ok)
+                            app.PostPopup(PopupEntrySeverity.Warning, $"Failed to connect to {connectivityInfo.DeviceName} by beacon");
                     }));
                 }
             });
-            this.RefreshDevicesCommand = new Command(async () => {
-                this.IsRefreshingDevices = true;
-
-                this.Devices.Clear();
-                _channels.ForEach(c => this.Devices.Insert(0, c));
-
-                player.BtConnector.RefreshDevices();
-                player.NetConnector.RefreshHosts();
-
-                await Task.Delay(5000);
-                this.IsRefreshingDevices = false;
-            });
             this.CloseQrCommand = new Command(async () => {
                 this.IsQrVisible = false;
+                this.QrContent = null;
             });
+            this.IsRefreshAvailable = true;
         }
 
-        void GenerateQr(string codeValue)
+        private void RegisterDiscoveredDevice(DeviceEntry entry)
+        {
+            if (_knownDevices.TryGetValue(entry.ToString(), out var oldEntry))
+                this.Devices.Remove(oldEntry);
+
+            _knownDevices[entry.ToString()] = entry;
+            this.Devices.Add(entry);
+        }
+
+        public async override void OnRefresh()
+        {
+            this.IsRefreshing = true;
+
+            this.Devices.Clear();
+            _knownDevices.Clear();
+            _channels.ForEach(c => this.Devices.Insert(0, c));
+
+            var player = ServiceContext.Instance.Player;
+            player.BtConnector.Refresh();
+            player.NetConnector.Refresh();
+
+            await Task.Delay(5000);
+            this.IsRefreshing = false;
+        }
+
+        private void GenerateQr(string codeValue)
         {
             var qrCode = new ZXing.Net.Mobile.Forms.ZXingBarcodeImageView {
                 BarcodeFormat = BarcodeFormat.QR_CODE,
@@ -427,7 +581,7 @@ namespace MusicShare.ViewModels.Home
         //private async void EmulateConnect(DeviceEntry entry)
         //{
         //    _app.OperationInProgress = true;
-            
+
         //    await Task.Delay(2000);
         //    var newEntry = new DemoDeviceEntry(this, entry);
         //    _channels.Add(newEntry);
@@ -436,25 +590,93 @@ namespace MusicShare.ViewModels.Home
         //    _app.OperationInProgress = false;
         //}
 
-        internal async void DoBtConnect(BtDeviceEntry btDeviceEntry)
-        {
-            //TODO
-            _app.OperationInProgress = true;
-            ServiceContext.Instance.Player.BtConnector.ConnectBt(btDeviceEntry.Info.Address);
-            _app.OperationInProgress = false;
+        private bool _switching = false;
 
-            // this.EmulateConnect(btDeviceEntry);
+        private void SwitchConnectivitySharing(bool feedback, ConnectivityMode mode, bool turnOn)
+        {
+            if (feedback)
+            {
+                switch (mode)
+                {
+                    case ConnectivityMode.Bluetooth:
+                        this.IsBtSharingActivated = turnOn;
+                        this.IsBtSharingEnabled = true;
+                        break;
+                    case ConnectivityMode.Lan:
+                        this.IsLanSharingActivated = turnOn;
+                        this.IsLanSharingEnabled = true;
+                        break;
+                    case ConnectivityMode.Wan:
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else if (!_switching)
+            {
+                _switching = true;
+                switch (mode)
+                {
+                    case ConnectivityMode.Bluetooth:
+                        {
+                            this.IsBtSharingEnabled = false;
+
+                            if (turnOn)
+                                ServiceContext.Instance.Player.BtConnector.Enable();
+                            else
+                                ServiceContext.Instance.Player.BtConnector.Disable();
+                        }
+                        break;
+                    case ConnectivityMode.Lan:
+                        {
+                            this.IsLanSharingEnabled = false;
+
+                            if (turnOn)
+                                ServiceContext.Instance.Player.NetConnector.Enable();
+                            else
+                                ServiceContext.Instance.Player.NetConnector.Disable();
+                        }
+                        break;
+                    case ConnectivityMode.Wan:
+                        break;
+                    default:
+                        break;
+                }
+                _switching = false;
+            }
+
         }
 
-        internal async void DoNetConnect(NetDeviceEntry netDeviceEntry)
+        internal void DoBtConnect(BtDeviceEntry btDeviceEntry)
         {
-            //TODO
+            _app.OperationInProgress = true;
+
+            ServiceContext.Instance.Player.BtConnector.Connect(btDeviceEntry.Info.Address, cnn => this.InvokeAction(() => {
+                _app.OperationInProgress = false;
+            }), ex => this.InvokeAction(() => {
+                _app.OperationInProgress = false;
+                _app.PostPopup(PopupEntrySeverity.Warning, $"Failed to connect to {btDeviceEntry.Info.Name} by bluetooth");
+            }));
+        }
+
+        internal void DoNetConnect(NetDeviceEntry netDeviceEntry)
+        {
             var info = netDeviceEntry.Info;
             _app.OperationInProgress = true;
-            ServiceContext.Instance.Player.NetConnector.ConnectTo(info.Address, info.Port);
-            _app.OperationInProgress = false;
 
-            // this.EmulateConnect(netDeviceEntry);
+            ServiceContext.Instance.Player.NetConnector.Connect(info.Address, info.Port, cnn => this.InvokeAction(() => {
+                _app.OperationInProgress = false;
+            }), ex => this.InvokeAction(() => {
+                _app.OperationInProgress = false;
+                _app.PostPopup(PopupEntrySeverity.Warning, $"Failed to connect to {netDeviceEntry.Info.Name} by network");
+            }));
+        }
+
+        internal void DoDisconnect(DeviceChannelEntry chanEntry)
+        {
+            _channels.Remove(chanEntry);
+            this.Devices.Remove(chanEntry);
+            chanEntry.Channel.SafeDispose();
         }
     }
 

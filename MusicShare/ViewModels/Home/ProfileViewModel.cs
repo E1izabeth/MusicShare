@@ -154,12 +154,11 @@ namespace MusicShare.ViewModels.Home
         public ICommand ChangePasswordCommand { get; }
         public ICommand ActivateProfileCommand { get; }
 
-        public AppViewModel App { get; }
-
-        public ProfileViewModel(AppViewModel app)
-            : base("Profile")
+        public ProfileViewModel(AppStateGroupViewModel group)
+            : base("Profile", group)
         {
-            this.App = app;
+            var app = this.App;
+
             this.ChangeEmailCommand = new Command(async () =>
             {
                 if (this.NewEmail != this.NewEmail2)

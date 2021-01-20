@@ -36,6 +36,11 @@ namespace MusicShare.Service
         // recreate or create new one 
         //   sqllocaldb c "new instance"
 
+        static void Test()
+        {
+            throw new Exception("asdf");
+        }
+
         static void Main(string[] args)
         {
             var cfg = new MusicShareServiceConfiguration()

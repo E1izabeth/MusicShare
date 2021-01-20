@@ -7,7 +7,7 @@ using Xamarin.Forms;
 
 namespace MusicShare.ViewModels.Home
 {
-    class TrackInfo : BindableObject
+    public class TrackInfo : BindableObject
     {
         #region bool IsActive 
 
@@ -52,11 +52,18 @@ namespace MusicShare.ViewModels.Home
             var fname = System.IO.Path.GetFileName(info.FilePathOrUri);
             this.Header = (string.IsNullOrWhiteSpace(info.Artist) || string.IsNullOrWhiteSpace(info.Title)) ? fname : info.Artist + " - " + info.Title;
 
-            this.Duration = info.Duration.FormatPlaybackTime();
+            if (info.Duration.HasValue)
+            {
+                this.Duration = info.Duration.Value.FormatPlaybackTime();
+            }
+            else
+            {
+                this.Duration = "--:--";
+            }
         }
     }
 
-    class PlaybackViewModel : MenuPageViewModel
+    public class PlaybackViewModel : MenuPageViewModel
     {
         public ICommand PlayCommand { get; }
         public ICommand PauseCommand { get; }
@@ -217,8 +224,8 @@ namespace MusicShare.ViewModels.Home
 
         #endregion
 
-        public PlaybackViewModel(AppViewModel app)
-            : base("Playback")
+        public PlaybackViewModel(AppStateGroupViewModel group)
+            : base("Playback", group)
         {
             var player = ServiceContext.Instance.Player;
 
@@ -235,7 +242,7 @@ namespace MusicShare.ViewModels.Home
             this.PrevTrackCommand = new Command(async () => player.PlayPrevTrack());
 
             this.AddTrackCommand = new Command(async () => {
-                var f = await Plugin.FilePicker.CrossFilePicker.Current.PickFile(new[] { "*.mp3" });
+                var f = await Plugin.FilePicker.CrossFilePicker.Current.PickFile(new[] { "audio/*" });
                 if (f != null && !string.IsNullOrEmpty(f.FilePath))
                 {
                     player.Playlist.Add(f.FilePath);

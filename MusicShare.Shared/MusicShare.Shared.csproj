@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="call &quot;$(DevEnvDir)..\Tools\VsDevCmd.bat&quot;&#xA;&#xD;&#xA;msxsl.exe $(ProjectDir)MusicShareSvc.xsd $(ProjectDir)expandGroups.xslt -o $(ProjectDir)MusicShareSvc.expanded.xsd&#xD;&#xA;xsd /c $(ProjectDir)MusicShareSvc.expanded.xsd /o:$(ProjectDir)&#xD;&#xA;msxsl.exe $(ProjectDir)MusicShareSvc.xsd $(ProjectDir)expandVisitors.xslt -o $(ProjectDir)MusicShareSvc_visitors.cs&#xD;&#xA;" />
+  </Target>
+
+  <ItemGroup>
+    <None Remove="expandGroups.xslt" />
+    <None Remove="expandVisitors.xslt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="expandGroups.xslt" />
+    <Content Include="expandVisitors.xslt" />
+  </ItemGroup>
+
+</Project>

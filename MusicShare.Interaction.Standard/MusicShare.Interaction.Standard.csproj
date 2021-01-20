@@ -44,6 +44,7 @@
     <Compile Include="Common\BidirectionalStream.cs" />
     <Compile Include="Common\ByteQueue.cs" />
     <Compile Include="Common\DisposableObject.cs" />
+    <Compile Include="Common\IlReader.cs" />
     <Compile Include="Common\Log.cs" />
     <Compile Include="Common\WorkerThreadPool.cs" />
     <Compile Include="DisposableList.cs" />
