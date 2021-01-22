@@ -63,12 +63,18 @@ namespace MusicShare.Droid.Services.Impl
             this.OnInsertItem?.Invoke(index, trackInfo);
         }
 
-        public void Add(string filepath)
+        public bool Add(string filepath)
         {
-            var trackInfo = this.CollectTrackInfo(filepath);
+            PlayerTrackInfo trackInfo;
+
+            try { trackInfo = this.CollectTrackInfo(filepath); }
+            catch { return false; }
+
             var index = _playerTracks.Count;
             _playerTracks.Add(trackInfo);
             this.OnInsertItem?.Invoke(index, trackInfo);
+
+            return true;
         }
 
         public void Remove(int index)

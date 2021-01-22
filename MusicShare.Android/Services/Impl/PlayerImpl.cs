@@ -21,6 +21,7 @@ using MusicShare.Interaction.Standard.Stream;
 using MusicShare.Services;
 using MusicShare.Services.Bluetooth;
 using MusicShare.Services.NetworkChannels;
+using MusicShare.Services.Platform;
 using MusicShare.Services.Streams;
 using Class = Java.Lang.Class;
 
@@ -95,8 +96,8 @@ namespace MusicShare.Droid.Services.Impl
 
             _negotiator = new StreamNegotiator();
             var netConnector = new NetworkConnectorService(_negotiator, PlayerService.Id, LocalPort, this.LocalDeviceName);
-            var btConnector = BluetoothAdapter.DefaultAdapter != null ? new BluetoothConnectorService(_negotiator, PlayerService.Id, this.LocalDeviceName, service)
-                                                                      : (IBluetoothConnectorImpl)new NullBluetoothConnectorService();
+            var btConnector = PlatformContext.Instance.CreateBluetoothConnector(_negotiator, PlayerService.Id, this.LocalDeviceName);
+
             this.NetConnector = netConnector;
             this.BtConnector = btConnector;
 

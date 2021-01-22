@@ -63,12 +63,13 @@ namespace MusicShare.Uwp.Services
             return _playerTracks[index];
         }
 
-        public void Add(string filepath)
+        public bool Add(string filepath)
         {
             var trackInfo = new PlayerTrackInfo(null, null, null, null, Path.GetFileNameWithoutExtension(filepath), filepath); // this.CollectTrackInfo(filepath);
             var index = _playerTracks.Count;
             _playerTracks.Add(trackInfo);
             this.OnInsertItem?.Invoke(index, trackInfo);
+            return true;
         }
 
         public void Remove(int index)
@@ -779,6 +780,7 @@ namespace MusicShare.Uwp.Services
 
         public PlayerService()
         {
+            new Platform.PlatformServices();
             this.Player = new PlayerImpl();
 
             ServiceContext.SetInstance(this);

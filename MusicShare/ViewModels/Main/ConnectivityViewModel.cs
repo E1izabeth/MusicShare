@@ -482,8 +482,8 @@ namespace MusicShare.ViewModels.Home
                 }
             });
             this.CloseQrCommand = new Command(async () => {
-                this.IsQrVisible = false;
                 this.QrContent = null;
+                this.IsQrVisible = false;
             });
             this.IsRefreshAvailable = true;
         }

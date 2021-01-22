@@ -60,7 +60,7 @@ namespace MusicShare
 
         int ActiveTrackIndex { get; }
 
-        void Add(string filepath);
+        bool Add(string filepath);
         void Remove(int index);
         void Move(int from, int to);
         void Clear();

@@ -8,6 +8,7 @@
             xmlns:vhome="clr-namespace:MusicShare.Views.Home"
             xmlns:vm="clr-namespace:MusicShare.ViewModels"
             xmlns:vmh="clr-namespace:MusicShare.ViewModels.Home"
+            xmlns:vmm="clr-namespace:MusicShare.ViewModels.Main"
             x:Class="MusicShare.Views.MainPage"
             MasterBehavior="Popover"
             Title="MusicShare" x:Name="root"
@@ -123,52 +124,25 @@
                                                         <views:PlaybackPage />
                                                     </DataTemplate>
                                                 </views:TemplateCase>
+                                                <views:TemplateCase DataType="{x:Type vmm:FsFolderViewModel}" >
+                                                    <DataTemplate>
+                                                        <views:FsFolderPage />
+                                                    </DataTemplate>
+                                                </views:TemplateCase>
                                             </views:TemplateSelector>
                                         </views:ContentPresenter.ItemTemplate>
                                     </views:ContentPresenter>
                                 </DataTemplate>
                             </Grid.Resources>
 
-                            <ContentView>
-                                <ContentView.Content>
-                                    <OnPlatform x:TypeArguments="View">
-                                        <On Platform="Android">
-                                            <RefreshView Command="{Binding CurrentStateModel.CurrentPage.RefreshCommand}" 
-                                                         IsEnabled="{Binding CurrentStateModel.CurrentPage.IsRefreshAvailable}" 
-                                                         IsRefreshing="{Binding CurrentStateModel.CurrentPage.IsRefreshing}">
-                                                <!--<CarouselView ItemsSource="{Binding CurrentStateModel.CurrentGroup.SiblingPages}"
-                                              CurrentItem="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}"
-                                              ItemTemplate="{StaticResource pageViewTemplate}"/>-->
-
-                                                <CollectionView ItemsSource="{Binding CurrentStateModel.CurrentGroup.SiblingPages}" SelectionMode="None" 
-                                                views:CollectionViewAutoScroll.SelectedItemToFollow="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}"
-                                                views:CollectionViewAutoScroll.VisibleItems="{Binding CurrentVisiblePages,Mode=TwoWay}" SizeChanged="OnSizeChanged"
-                                                ItemTemplate="{StaticResource pageViewTemplate}">
-                                                    <CollectionView.ItemsLayout>
-                                                        <LinearItemsLayout Orientation="Horizontal" SnapPointsType="MandatorySingle" SnapPointsAlignment="Start" />
-                                                    </CollectionView.ItemsLayout>
-                                                </CollectionView>
-                                            </RefreshView>
-                                        </On>
-                                        <On Platform="UWP">
-                                            <CollectionView ItemsSource="{Binding CurrentStateModel.CurrentGroup.SiblingPages}" SelectionMode="None" 
-                                                            views:CollectionViewAutoScroll.SelectedItemToFollow="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}"
-                                                            views:CollectionViewAutoScroll.VisibleItems="{Binding CurrentVisiblePages,Mode=TwoWay}" SizeChanged="OnSizeChanged"
-                                                            ItemTemplate="{StaticResource pageViewTemplate}">
-                                                <CollectionView.ItemsLayout>
-                                                    <LinearItemsLayout Orientation="Horizontal" SnapPointsType="MandatorySingle" SnapPointsAlignment="Start" />
-                                                </CollectionView.ItemsLayout>
-                                            </CollectionView>
-                                        </On>
-                                        <!--<On Platform="iOS">
-                                            <ScrollView>
-                                                <Button Text="iOS"></Button>
-                                            </ScrollView>
-                                        </On>-->
-                                    </OnPlatform>
-                                </ContentView.Content>
-                            </ContentView>
-
+                            <CollectionView ItemsSource="{Binding CurrentStateModel.CurrentGroup.SiblingPages}" SelectionMode="None" 
+                                            views:CollectionViewAutoScroll.SelectedItemToFollow="{Binding CurrentStateModel.CurrentPage,Mode=TwoWay}"
+                                            views:CollectionViewAutoScroll.VisibleItems="{Binding CurrentVisiblePages,Mode=TwoWay}" SizeChanged="OnSizeChanged"
+                                            ItemTemplate="{StaticResource pageViewTemplate}">
+                                <CollectionView.ItemsLayout>
+                                    <LinearItemsLayout Orientation="Horizontal" SnapPointsType="MandatorySingle" SnapPointsAlignment="Start" />
+                                </CollectionView.ItemsLayout>
+                            </CollectionView>
                         </Grid>
 
                         <Frame Grid.Row="0" IsVisible="{Binding OperationInProgress}" BackgroundColor="LightGray" Opacity="0.25">

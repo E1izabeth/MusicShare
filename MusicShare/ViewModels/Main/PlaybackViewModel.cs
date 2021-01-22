@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Input;
+using MusicShare.Services.Platform;
+using MusicShare.ViewModels.Main;
 using Xamarin.Forms;
 
 namespace MusicShare.ViewModels.Home
@@ -241,13 +245,29 @@ namespace MusicShare.ViewModels.Home
             this.NextTrackCommand = new Command(async () => player.PlayNextTrack());
             this.PrevTrackCommand = new Command(async () => player.PlayPrevTrack());
 
-            this.AddTrackCommand = new Command(async () => {
-                var f = await Plugin.FilePicker.CrossFilePicker.Current.PickFile(new[] { "audio/*" });
-                if (f != null && !string.IsNullOrEmpty(f.FilePath))
-                {
-                    player.Playlist.Add(f.FilePath);
+            var ctx = new FsBrowsingContext() {
+                BackPage = this,
+                OkCallback = fsItems => {
+                    IPlatformFsItem[] expand(IPlatformFsItem item) => item.IsDir ? item.GetDirs().SelectMany(expand).Concat(item.GetFiles()).ToArray() : new[] { item };
+                    var items = fsItems.SelectMany(expand).ToArray();
+                    foreach (var item in items.Where(f => MimeTypes.GetMimeType(f.Name).StartsWith("audio/")))
+                        player.Playlist.Add(item.Path);
+
                     this.UpdateTracklistStatus();
                 }
+            };
+            var fsBrowsingPages = new AppStateGroupViewModel();
+            var fsRootPage = new FsFolderViewModel(ctx, fsBrowsingPages);
+
+            this.AddTrackCommand = new Command(async () => {
+                //var f = await Plugin.FilePicker.CrossFilePicker.Current.PickFile(new[] { "audio/*" });
+                //if (f != null && !string.IsNullOrEmpty(f.FilePath))
+                //{
+                //    player.Playlist.Add(f.FilePath);
+                //    this.UpdateTracklistStatus();
+                //}
+                AppViewModel.Instance.CurrentStateModel.CurrentGroup = fsBrowsingPages;
+                AppViewModel.Instance.CurrentStateModel.CurrentPage = fsBrowsingPages.SiblingPages.Last();
             });
             this.SelectTrackCommand = new Command(async () => {
                 this.ShowSelectors = true;

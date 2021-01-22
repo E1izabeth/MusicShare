@@ -12,6 +12,7 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using MusicShare.Droid.Services.Impl;
+using MusicShare.Droid.Services.Platform;
 
 namespace MusicShare.Droid.Services
 {
@@ -24,7 +25,7 @@ namespace MusicShare.Droid.Services
 
         public static event Action<IPlayerService> OnServiceReady;
         public static PlayerService Instance { get; private set; }
-
+        
         private static void SetInstance(PlayerService service)
         {
             lock (_instanceLock)
@@ -104,6 +105,8 @@ namespace MusicShare.Droid.Services
 
         public PlayerService()
         {
+            new PlatformSvc(this);
+
             _binder = new PlayerServiceBinder(this);
         }
 
